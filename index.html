@@ -607,45 +607,49 @@ document.getElementById("modal").style.display="flex";
 
 
 
-async function render(){
+import { onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+function iniciarRealtime(){
 
-const snap=await getDocs(collection(db,"agendamentos"));
+onSnapshot(collection(db,"agendamentos"), snapshot => {
 
+let lista = [];
 
-let lista=[];
-
-
-snap.forEach(d=>{
+snapshot.forEach(docSnap => {
 
 lista.push({
-
-id:d.id,
-
-...d.data()
-
+id: docSnap.id,
+...docSnap.data()
 });
 
 });
 
 
-lista
-
-.filter(a=>a.status!="excluido")
-
-.sort((a,b)=>a.data.localeCompare(b.data));
+// remove excluídos
+lista = lista.filter(a => a.status !== "excluido");
 
 
-let html="<table>";
+// ordena pelo mais próximo de hoje
+const hoje = new Date().toISOString().split("T")[0];
+
+lista.sort((a,b)=>{
+
+const diffA = Math.abs(new Date(a.data) - new Date(hoje));
+const diffB = Math.abs(new Date(b.data) - new Date(hoje));
+
+return diffA - diffB;
+
+});
 
 
-html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
+// monta tabela
+let html = "<table>";
 
+html += "<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
 
-lista.forEach(a=>{
+lista.forEach(a => {
 
-
-html+=`
+html += `
 
 <tr>
 
@@ -653,7 +657,7 @@ html+=`
 
 <td>${a.instrutor}</td>
 
-<td>${a.data}</td>
+<td>${new Date(a.data).toLocaleDateString("pt-BR")}</td>
 
 <td>
 
@@ -695,11 +699,15 @@ ${isAdmin?`
 
 });
 
+html += "</table>";
 
-html+="</table>";
+document.getElementById("painel").innerHTML = html;
 
 
-document.getElementById("painel").innerHTML=html;
+// atualizar calendário automaticamente
+calendar.refetchEvents();
+
+});
 
 }
 
@@ -795,8 +803,7 @@ success(eventos);
 
 
 calendar.render();
-
-render();
+iniciarRealtime();
 
 
 </script>
