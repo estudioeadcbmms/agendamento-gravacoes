@@ -122,6 +122,17 @@ box-shadow:0 20px 60px rgba(0,0,0,0.5);
 z-index:1;
 }
 
+.dia-bloqueado{
+background:#eee !important;
+opacity:0.4;
+}
+
+.feriado{
+background:#ffe4e6 !important;
+color:#b91c1c !important;
+font-weight:bold;
+}
+
 </style>
 
 </head>
@@ -152,7 +163,6 @@ z-index:1;
 
 
 <h2>Painel de Status das Gravações</h2>
-
 
 <div class="card" id="painel"></div>
 
@@ -241,11 +251,11 @@ collection,
 
 addDoc,
 
-getDocs,
-
 doc,
 
 updateDoc,
+
+onSnapshot,
 
 query,
 
@@ -291,6 +301,25 @@ let dataSelecionada="";
 
 
 const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
+
+
+// Abril apenas
+const MESES_PERMITIDOS=[3];
+
+
+// feriados nacionais 2026
+const FERIADOS=[
+
+"2026-04-03", // sexta santa
+"2026-04-21", // tiradentes
+"2026-05-01", // trabalho
+"2026-09-07",
+"2026-10-12",
+"2026-11-02",
+"2026-11-15",
+"2026-12-25"
+
+];
 
 
 
@@ -375,7 +404,6 @@ selectMateria.appendChild(o);
 });
 
 
-
 onAuthStateChanged(auth,user=>{
 
 currentUser=user;
@@ -390,7 +418,6 @@ user
 ?`${user.email}<br><button onclick="logout()">Sair</button>`
 
 :"";
-
 
 });
 
@@ -496,7 +523,6 @@ inicioRange.oninput=atualizarRange;
 fimRange.oninput=atualizarRange;
 
 
-
 configurarPeriodo();
 
 
@@ -509,11 +535,17 @@ const inicio=parseInt(inicioRange.value);
 const fim=parseInt(fimRange.value);
 
 
-const snap=await getDocs(
+const snap=await new Promise(resolve=>
+
+onSnapshot(
 
 query(collection(db,"agendamentos"),
 
 where("data","==",dataSelecionada)
+
+),
+
+s=>resolve(s)
 
 )
 
@@ -528,13 +560,7 @@ snap.forEach(d=>{
 const ag=d.data();
 
 
-if(
-
-inicio < ag.fim &&
-
-fim > ag.inicio
-
-){
+if(inicio < ag.fim && fim > ag.inicio){
 
 conflito=true;
 
@@ -571,12 +597,7 @@ status:"agendada"
 
 fechar();
 
-render();
-
-calendar.refetchEvents();
-
 };
-
 
 
 window.fechar=()=>{
@@ -598,6 +619,15 @@ return;
 }
 
 
+if(FERIADOS.includes(data)){
+
+alert("feriado nacional");
+
+return;
+
+}
+
+
 dataSelecionada=data;
 
 
@@ -607,49 +637,48 @@ document.getElementById("modal").style.display="flex";
 
 
 
-import { onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
 function iniciarRealtime(){
 
-onSnapshot(collection(db,"agendamentos"), snapshot => {
 
-let lista = [];
+onSnapshot(collection(db,"agendamentos"),snapshot=>{
 
-snapshot.forEach(docSnap => {
+
+let lista=[];
+
+
+snapshot.forEach(d=>{
 
 lista.push({
-id: docSnap.id,
-...docSnap.data()
-});
+
+id:d.id,
+
+...d.data()
 
 });
-
-
-// remove excluídos
-lista = lista.filter(a => a.status !== "excluido");
-
-
-// ordena pelo mais próximo de hoje
-const hoje = new Date().toISOString().split("T")[0];
-
-lista.sort((a,b)=>{
-
-const diffA = Math.abs(new Date(a.data) - new Date(hoje));
-const diffB = Math.abs(new Date(b.data) - new Date(hoje));
-
-return diffA - diffB;
 
 });
 
 
-// monta tabela
-let html = "<table>";
+lista=lista.filter(a=>a.status!="excluido");
 
-html += "<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
 
-lista.forEach(a => {
+lista.sort((a,b)=>
 
-html += `
+new Date(a.data)-new Date(b.data)
+
+);
+
+
+let html="<table>";
+
+
+html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
+
+
+lista.forEach(a=>{
+
+
+html+=`
 
 <tr>
 
@@ -699,12 +728,13 @@ ${isAdmin?`
 
 });
 
-html += "</table>";
 
-document.getElementById("painel").innerHTML = html;
+html+="</table>";
 
 
-// atualizar calendário automaticamente
+document.getElementById("painel").innerHTML=html;
+
+
 calendar.refetchEvents();
 
 });
@@ -721,12 +751,7 @@ status:"finalizada"
 
 });
 
-render();
-
-calendar.refetchEvents();
-
 };
-
 
 
 window.excluir=id=>{
@@ -736,10 +761,6 @@ updateDoc(doc(db,"agendamentos",id),{
 status:"excluido"
 
 });
-
-render();
-
-calendar.refetchEvents();
 
 };
 
@@ -753,19 +774,59 @@ document.getElementById("calendar"),
 
 locale:"pt-br",
 
-dateClick:e=>abrir(e.dateStr),
+
+dateClick:e=>{
 
 
-events:async(info,success)=>{
+const data=new Date(e.dateStr);
 
 
-const snap=await getDocs(collection(db,"agendamentos"));
+if(!MESES_PERMITIDOS.includes(data.getMonth())){
+
+alert("agendamentos apenas para Abril");
+
+return;
+
+}
+
+
+abrir(e.dateStr);
+
+},
+
+
+dayCellDidMount:info=>{
+
+
+const dataStr=info.date.toISOString().split("T")[0];
+
+
+if(!MESES_PERMITIDOS.includes(info.date.getMonth())){
+
+info.el.classList.add("dia-bloqueado");
+
+}
+
+
+if(FERIADOS.includes(dataStr)){
+
+info.el.classList.add("feriado");
+
+}
+
+},
+
+
+events:(info,success)=>{
+
+
+onSnapshot(collection(db,"agendamentos"),snapshot=>{
 
 
 let eventos=[];
 
 
-snap.forEach(d=>{
+snapshot.forEach(d=>{
 
 
 let a=d.data();
@@ -784,7 +845,6 @@ color:a.status=="finalizada"?"green":"blue"
 
 });
 
-
 }
 
 
@@ -792,6 +852,8 @@ color:a.status=="finalizada"?"green":"blue"
 
 
 success(eventos);
+
+});
 
 }
 
@@ -803,6 +865,7 @@ success(eventos);
 
 
 calendar.render();
+
 iniciarRealtime();
 
 
