@@ -104,39 +104,43 @@
     measurementId: "G-2PBTJ0S516"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-const MEU_EMAIL = 'estudioeadcbmms@gmail.com'; // seu email real
+// variáveis globais
+let currentUser = null;
+let isAdmin = false;
+
+const MEU_EMAIL = 'estudioeadcbmms@gmail.com';
 
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
+
   const statusEl = document.getElementById('auth-status');
   const btn = document.getElementById('google-login-btn');
 
   if (user) {
 
-    // verifica se é o administrador
     isAdmin = user.email === MEU_EMAIL;
 
-    statusEl.innerHTML = `Logado como: ${user.displayName || user.email} 
-      <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>`;
+    statusEl.innerHTML = `
+      Logado como: ${user.displayName || user.email}
+      <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>
+    `;
 
     if (isAdmin) {
-      statusEl.innerHTML += '<br><small>(Você tem permissão para finalizar gravações)</small>';
-    } else {
-      statusEl.innerHTML += '<br><small>(Somente administrador pode finalizar gravações)</small>';
+      statusEl.innerHTML += "<br><small>Você é administrador</small>";
     }
 
-    btn.style.display = 'none';
+    btn.style.display = "none";
 
   } else {
 
     isAdmin = false;
-    statusEl.textContent = 'Faça login com Google para agendar ou finalizar';
-    btn.style.display = 'inline-block';
+    statusEl.textContent = "Faça login com Google";
+    btn.style.display = "inline-block";
 
   }
 
