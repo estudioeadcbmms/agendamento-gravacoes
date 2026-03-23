@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
+
 <meta charset="UTF-8">
+
 <title>Agendamento de Gravações CFS - 2026</title>
 
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
@@ -9,122 +12,283 @@
 <style>
 
 body{
-font-family: Arial;
+
+font-family:Arial;
+
 margin:0;
-background:linear-gradient(180deg,#0f172a,#020617);
+
+background:linear-gradient(180deg,#020617,#0f172a);
+
 color:white;
+
 padding:20px;
+
 }
+
 
 h2{
+
 text-align:center;
-margin-top:30px;
+
 }
+
+
+.card{
+
+background:white;
+
+color:black;
+
+padding:20px;
+
+border-radius:14px;
+
+max-width:900px;
+
+margin:20px auto;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
+}
+
 
 #calendar{
+
 max-width:900px;
-margin:20px auto;
-background:white;
-color:black;
-padding:20px;
-border-radius:14px;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
+margin:auto;
+
 }
+
 
 #painel{
+
 max-width:1100px;
-margin:30px auto;
-background:white;
-color:black;
-padding:20px;
-border-radius:14px;
+
+margin:auto;
+
+height:450px;
+
 overflow:auto;
-height:480px;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
 }
+
 
 table{
+
 width:100%;
+
 border-collapse:collapse;
+
 }
+
 
 th{
+
 background:#020617;
+
 color:white;
+
 padding:14px;
+
 }
+
 
 td{
-padding:12px;
+
+padding:10px;
+
 border-bottom:1px solid #eee;
+
 }
+
 
 .status{
+
 padding:6px 14px;
+
 border-radius:20px;
+
 color:white;
-font-weight:bold;
-font-size:0.85em;
+
+font-size:0.8em;
+
 }
+
 
 button{
+
 background:#2563eb;
+
 color:white;
+
 border:none;
+
 padding:8px 14px;
+
 border-radius:8px;
+
 cursor:pointer;
-font-weight:bold;
+
 margin:2px;
+
 }
+
 
 button:hover{
+
 background:#1d4ed8;
+
 }
 
-button:disabled{
-background:#999;
-cursor:not-allowed;
+
+select,input{
+
+padding:8px;
+
+margin:5px;
+
+border-radius:6px;
+
+border:1px solid #ccc;
+
+width:100%;
+
 }
 
-#auth-section{
-text-align:center;
-background:#1e293b;
-padding:20px;
+
+.range{
+
+width:100%;
+
+}
+
+
+#modal{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+right:0;
+
+bottom:0;
+
+background:rgba(0,0,0,0.7);
+
+display:none;
+
+align-items:center;
+
+justify-content:center;
+
+}
+
+
+#modalContent{
+
+background:white;
+
+color:black;
+
+padding:25px;
+
 border-radius:14px;
-max-width:600px;
-margin:auto;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
+width:350px;
+
 }
 
-#google-login-btn{
-background:#4285F4;
-padding:12px 25px;
-font-size:1.1em;
-}
 
 </style>
 
 </head>
 
+
 <body>
+
 
 <h2>Agendamento de Gravações CFS - 2026</h2>
 
-<div id="auth-section">
+
+<div class="card">
+
 <h3>Área de Administração</h3>
 
-<button id="google-login-btn">Entrar com Google</button>
+<button id="login">Entrar com Google</button>
 
-<p id="auth-status"></p>
+<p id="statusLogin"></p>
 
 </div>
 
+
+<div class="card">
+
 <div id="calendar"></div>
+
+</div>
+
 
 <h2>Painel de Status das Gravações</h2>
 
-<div id="painel"></div>
+
+<div class="card" id="painel"></div>
+
+
+
+<div id="modal">
+
+<div id="modalContent">
+
+
+<h3>Novo Agendamento</h3>
+
+
+<label>Matéria</label>
+
+<select id="materia"></select>
+
+
+<label>Instrutor</label>
+
+<input id="instrutor">
+
+
+<label>Período</label>
+
+<select id="periodo">
+
+<option value="manha">07:00 às 12:00</option>
+
+<option value="tarde">13:00 às 17:00</option>
+
+</select>
+
+
+<label>Início</label>
+
+<input type="range" id="inicioRange" class="range">
+
+
+<label>Fim</label>
+
+<input type="range" id="fimRange" class="range">
+
+
+<p id="horarioEscolhido"></p>
+
+
+<button onclick="salvar()">Salvar</button>
+
+<button onclick="fechar()">Cancelar</button>
+
+
+</div>
+
+</div>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
@@ -132,88 +296,170 @@ font-size:1.1em;
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
-from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where }
-from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import{
+
+initializeApp
+
+}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
-    authDomain: "cfs-2026.firebaseapp.com",
-    projectId: "cfs-2026",
-    storageBucket: "cfs-2026.firebasestorage.app",
-    messagingSenderId: "1065046463895",
-    appId: "1:1065046463895:web:14f86d3e9ed228a192e0d2",
-    measurementId: "G-2PBTJ0S516"
-  };
+import{
 
-const app = initializeApp(firebaseConfig);
+getAuth,
 
-const auth = getAuth(app);
+GoogleAuthProvider,
 
-const db = getFirestore(app);
+signInWithPopup,
 
-const provider = new GoogleAuthProvider();
+onAuthStateChanged,
+
+signOut
+
+}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+
+import{
+
+getFirestore,
+
+collection,
+
+addDoc,
+
+getDocs,
+
+doc,
+
+updateDoc,
+
+query,
+
+where
+
+}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+
+
+const firebaseConfig={
+
+apiKey:"SUA_API_KEY",
+
+authDomain:"cfs-2026.firebaseapp.com",
+
+projectId:"cfs-2026",
+
+storageBucket:"cfs-2026.appspot.com",
+
+messagingSenderId:"XXXX",
+
+appId:"XXXX"
+
+};
+
+
+
+const app=initializeApp(firebaseConfig);
+
+const auth=getAuth(app);
+
+const db=getFirestore(app);
+
+const provider=new GoogleAuthProvider();
+
+
 
 let currentUser=null;
 
 let isAdmin=false;
 
+let dataSelecionada="";
+
+
+
 const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
+
 
 
 const MATERIAS=[
 
-"Combate ao Racismo e Homofobia - III",
-"Direito Militar - I",
-"Direitos Humanos - II",
-"Legislação Bombeiro Militar - III",
-"Psicologia das Emergências - II",
-"Relação de Gênero - III",
-"Relacionamento Interpessoal - III",
-"Relações Humanas, Chefia e Liderança - I",
 "Administração Bombeiro Militar - I",
+
 "Armamento Munição e Tiro - II",
-"Ciências Aplicadas a Atividade BM - II",
-"Comunicações e Tecnologia da Informação - II",
-"Equipamento Motomecanizado - II",
-"Informação e Contrainformação",
-"Metodologia de Ensino - I",
-"Ordem Unida - II",
-"Redação Oficial",
-"Saúde e Segurança Aplicadas ao Trabalho - II",
+
 "Atendimento com Produtos Perigosos - III",
+
+"Ciências Aplicadas a Atividade BM - II",
+
+"Combate ao Racismo e Homofobia - III",
+
+"Comunicações e Tecnologia da Informação - II",
+
 "Defesa Civil - II",
+
+"Direito Militar - I",
+
+"Direitos Humanos - II",
+
 "Educação Física Militar - III",
+
+"Equipamento Motomecanizado - II",
+
+"Informação e Contrainformação",
+
+"Legislação Bombeiro Militar - III",
+
+"Metodologia de Ensino - I",
+
+"Ordem Unida - II",
+
 "Prevenção e Proteção Contra Incêndio e Pânico - III",
+
+"Psicologia das Emergências - II",
+
+"Redação Oficial",
+
+"Relação de Gênero - III",
+
+"Relacionamento Interpessoal - III",
+
+"Relações Humanas, Chefia e Liderança - I",
+
+"Saúde e Segurança Aplicadas ao Trabalho - II",
+
 "Sistema de Comando de Incidentes - III",
+
 "Tática de Atendimento Pré-Hospitalar",
+
 "Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
+
 "Tática de Combate a Incêndio Florestal",
+
 "Tática de Combate a Incêndio Urbano",
+
 "Tática de Salvamento Aquático",
+
 "Tática de Salvamento em Altura",
+
 "Tática de Salvamento Terrestre"
 
-];
+].sort();
 
 
-const HORARIOS=[
 
-{inicio:"07:00",fim:"08:00"},
-{inicio:"08:00",fim:"09:00"},
-{inicio:"09:00",fim:"10:00"},
-{inicio:"10:00",fim:"11:00"},
-{inicio:"11:00",fim:"12:00"},
-{inicio:"13:00",fim:"14:00"},
-{inicio:"14:00",fim:"15:00"},
-{inicio:"15:00",fim:"16:00"},
-{inicio:"16:00",fim:"17:00"}
+const selectMateria=document.getElementById("materia");
 
-];
+MATERIAS.forEach(m=>{
+
+const o=document.createElement("option");
+
+o.value=m;
+
+o.text=m;
+
+selectMateria.appendChild(o);
+
+});
 
 
 
@@ -221,116 +467,265 @@ onAuthStateChanged(auth,user=>{
 
 currentUser=user;
 
-const status=document.getElementById("auth-status");
+isAdmin=user?.email===ADMIN_EMAIL;
 
-const btn=document.getElementById("google-login-btn");
 
-if(user){
+document.getElementById("statusLogin").innerHTML=
 
-isAdmin=user.email===ADMIN_EMAIL;
+user
 
-status.innerHTML=`Logado como ${user.email}
-<br>
-<button onclick="logout()">Sair</button>
-`;
+?`${user.email}<br><button onclick="logout()">Sair</button>`
 
-btn.style.display="none";
+:"";
 
-}else{
-
-isAdmin=false;
-
-status.innerHTML="Faça login para agendar";
-
-btn.style.display="inline-block";
-
-}
-
-renderPainel();
 
 });
 
 
+document.getElementById("login")
 
-window.loginWithGoogle=()=>signInWithPopup(auth,provider);
+.onclick=()=>signInWithPopup(auth,provider);
+
 
 window.logout=()=>signOut(auth);
 
 
 
-document.getElementById("google-login-btn")
-.addEventListener("click",loginWithGoogle);
+function horaParaMin(h){
+
+let[a,b]=h.split(":");
+
+return parseInt(a)*60+parseInt(b);
+
+}
 
 
+function minParaHora(m){
 
-function formatarData(data){
+let h=Math.floor(m/60);
 
-return new Date(data)
-.toLocaleDateString("pt-BR");
+let mm=m%60;
+
+return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
 
 }
 
 
 
-async function renderPainel(){
+const inicioRange=document.getElementById("inicioRange");
+
+const fimRange=document.getElementById("fimRange");
+
+
+
+function atualizarRange(){
+
+let inicio=minParaHora(parseInt(inicioRange.value));
+
+let fim=minParaHora(parseInt(fimRange.value));
+
+
+document.getElementById("horarioEscolhido")
+
+.innerText=inicio+" até "+fim;
+
+}
+
+
+inicioRange.oninput=atualizarRange;
+
+fimRange.oninput=atualizarRange;
+
+
+
+document.getElementById("periodo")
+
+.onchange=e=>{
+
+if(e.target.value=="manha"){
+
+inicioRange.min=420;
+
+inicioRange.max=720;
+
+fimRange.min=420;
+
+fimRange.max=720;
+
+}else{
+
+inicioRange.min=780;
+
+inicioRange.max=1020;
+
+fimRange.min=780;
+
+fimRange.max=1020;
+
+}
+
+};
+
+
+
+window.salvar=async()=>{
+
+
+const inicio=minParaHora(inicioRange.value);
+
+const fim=minParaHora(fimRange.value);
+
+
+const snap=await getDocs(
+
+query(
+
+collection(db,"agendamentos"),
+
+where("data","==",dataSelecionada)
+
+)
+
+);
+
+
+let conflito=false;
+
+
+snap.forEach(d=>{
+
+const ag=d.data();
+
+if(
+
+inicio < horaParaMin(ag.fim) &&
+
+fim > horaParaMin(ag.inicio)
+
+){
+
+conflito=true;
+
+}
+
+});
+
+
+if(conflito){
+
+alert("horário ocupado");
+
+return;
+
+}
+
+
+await addDoc(collection(db,"agendamentos"),{
+
+data:dataSelecionada,
+
+materia:selectMateria.value,
+
+instrutor:document.getElementById("instrutor").value,
+
+inicio,
+
+fim,
+
+status:"agendada"
+
+});
+
+
+fechar();
+
+render();
+
+};
+
+
+
+window.fechar=()=>{
+
+document.getElementById("modal").style.display="none";
+
+};
+
+
+
+function abrir(data){
+
+if(!currentUser){
+
+alert("faça login");
+
+return;
+
+}
+
+
+dataSelecionada=data;
+
+
+document.getElementById("modal").style.display="flex";
+
+}
+
+
+
+async function render(){
+
 
 const snap=await getDocs(collection(db,"agendamentos"));
 
-let html=`
 
-<table>
-
-<thead>
-
-<tr>
-
-<th>Matéria</th>
-
-<th>Instrutor</th>
-
-<th>Data</th>
-
-<th>Horário</th>
-
-<th>Status</th>
-
-<th>Ações</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-`;
+let lista=[];
 
 
-snap.forEach(docSnap=>{
+snap.forEach(d=>{
 
-const d=docSnap.data();
+lista.push({
 
-const cor=d.status==="finalizada"
-?"green"
-:"orange";
+id:d.id,
+
+...d.data()
+
+});
+
+});
+
+
+lista.sort((a,b)=>a.data.localeCompare(b.data));
+
+
+let html="<table>";
+
+
+html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
+
+
+lista.forEach(a=>{
 
 
 html+=`
 
 <tr>
 
-<td>${d.materia}</td>
+<td>${a.materia}</td>
 
-<td>${d.instrutor}</td>
+<td>${a.instrutor}</td>
 
-<td>${formatarData(d.data)}</td>
+<td>${a.data}</td>
 
-<td>${d.inicio} - ${d.fim}</td>
+<td>${minParaHora(a.inicio)}-${minParaHora(a.fim)}</td>
 
 <td>
 
-<span class="status" style="background:${cor}">
+<span class="status"
 
-${d.status}
+style="background:${a.status=="finalizada"?"green":"orange"}">
+
+${a.status}
 
 </span>
 
@@ -340,11 +735,9 @@ ${d.status}
 
 ${isAdmin?`
 
-<button onclick="finalizar('${docSnap.id}')">Finalizar</button>
+<button onclick="finalizar('${a.id}')">✔</button>
 
-<button onclick="editar('${docSnap.id}')">Editar</button>
-
-<button onclick="excluir('${docSnap.id}')">Excluir</button>
+<button onclick="excluir('${a.id}')">🗑</button>
 
 `:""}
 
@@ -357,7 +750,8 @@ ${isAdmin?`
 });
 
 
-html+="</tbody></table>";
+html+="</table>";
+
 
 document.getElementById("painel").innerHTML=html;
 
@@ -365,79 +759,32 @@ document.getElementById("painel").innerHTML=html;
 
 
 
-window.finalizar=async id=>{
+window.finalizar=id=>{
 
-await updateDoc(doc(db,"agendamentos",id),{
+updateDoc(doc(db,"agendamentos",id),{
 
 status:"finalizada"
 
 });
 
-renderPainel();
+render();
 
 };
 
 
 
-window.editar=async id=>{
+window.excluir=id=>{
 
-const novaMateria=prompt(
-
-MATERIAS.map((m,i)=>
-
-`${i+1} - ${m}`
-
-).join("\n")
-
-);
-
-
-const novoHorario=prompt(
-
-HORARIOS.map((h,i)=>
-
-`${i+1} - ${h.inicio} às ${h.fim}`
-
-).join("\n")
-
-);
-
-
-await updateDoc(doc(db,"agendamentos",id),{
-
-materia:MATERIAS[novaMateria-1],
-
-inicio:HORARIOS[novoHorario-1].inicio,
-
-fim:HORARIOS[novoHorario-1].fim
-
-});
-
-renderPainel();
-
-};
-
-
-
-window.excluir=async id=>{
-
-if(confirm("Excluir?")){
-
-await updateDoc(doc(db,"agendamentos",id),{
+updateDoc(doc(db,"agendamentos",id),{
 
 status:"excluido"
 
 });
 
-renderPainel();
-
-}
+render();
 
 };
 
-
-
-document.addEventListener("DOMContentLoaded",()=>{
 
 
 const calendar=new FullCalendar.Calendar(
@@ -446,102 +793,9 @@ document.getElementById("calendar"),
 
 {
 
-initialView:"dayGridMonth",
-
 locale:"pt-br",
 
-
-dateClick:async info=>{
-
-if(!currentUser){
-
-alert("Faça login");
-
-return;
-
-}
-
-
-const materiaIndex=prompt(
-
-MATERIAS.map((m,i)=>
-
-`${i+1} - ${m}`
-
-).join("\n")
-
-);
-
-
-const horarioIndex=prompt(
-
-HORARIOS.map((h,i)=>
-
-`${i+1} - ${h.inicio} às ${h.fim}`
-
-).join("\n")
-
-);
-
-
-const instrutor=prompt("Instrutor");
-
-
-const data=info.dateStr;
-
-
-const q=query(
-
-collection(db,"agendamentos"),
-
-where("data","==",data),
-
-where("inicio","==",HORARIOS[horarioIndex-1].inicio)
-
-);
-
-
-const snap=await getDocs(q);
-
-
-if(!snap.empty){
-
-alert("Horário ocupado");
-
-return;
-
-}
-
-
-await addDoc(
-
-collection(db,"agendamentos"),
-
-{
-
-data,
-
-materia:MATERIAS[materiaIndex-1],
-
-inicio:HORARIOS[horarioIndex-1].inicio,
-
-fim:HORARIOS[horarioIndex-1].fim,
-
-instrutor:instrutor||"",
-
-status:"agendada"
-
-}
-
-);
-
-
-renderPainel();
-
-calendar.refetchEvents();
-
-},
-
+dateClick:e=>abrir(e.dateStr),
 
 
 events:async(info,success)=>{
@@ -549,32 +803,28 @@ events:async(info,success)=>{
 
 const snap=await getDocs(collection(db,"agendamentos"));
 
-const eventos=[];
+
+let eventos=[];
 
 
-snap.forEach(doc=>{
+snap.forEach(d=>{
 
 
-const d=doc.data();
+let a=d.data();
 
 
-if(d.status!=="excluido"){
+if(a.status!="excluido"){
 
 
 eventos.push({
 
-title:d.materia,
+title:a.materia,
 
-start:d.data,
+start:a.data,
 
-color:d.status==="finalizada"
-
-?"green"
-
-:"#2563eb"
+color:a.status=="finalizada"?"green":"blue"
 
 });
-
 
 }
 
@@ -583,7 +833,6 @@ color:d.status==="finalizada"
 
 
 success(eventos);
-
 
 }
 
@@ -596,12 +845,12 @@ success(eventos);
 
 calendar.render();
 
-renderPainel();
-
-});
+render();
 
 
 </script>
 
+
 </body>
+
 </html>
