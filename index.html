@@ -312,13 +312,8 @@ const DATA_FIM_PERMITIDA="2026-04-30";
 const FERIADOS=[
 
 "2026-04-03",
-"2026-04-21",
-"2026-05-01",
-"2026-09-07",
-"2026-10-12",
-"2026-11-02",
-"2026-11-15",
-"2026-12-25"
+
+"2026-04-21"
 
 ];
 
@@ -327,34 +322,63 @@ const FERIADOS=[
 const MATERIAS=[
 
 "Administração Bombeiro Militar - I",
+
 "Armamento Munição e Tiro - II",
+
 "Atendimento com Produtos Perigosos - III",
+
 "Ciências Aplicadas a Atividade BM - II",
+
 "Combate ao Racismo e Homofobia - III",
+
 "Comunicações e Tecnologia da Informação - II",
+
 "Defesa Civil - II",
+
 "Direito Militar - I",
+
 "Direitos Humanos - II",
+
 "Educação Física Militar - III",
+
 "Equipamento Motomecanizado - II",
+
 "Informação e Contrainformação",
+
 "Legislação Bombeiro Militar - III",
+
 "Metodologia de Ensino - I",
+
 "Ordem Unida - II",
+
 "Prevenção e Proteção Contra Incêndio e Pânico - III",
+
 "Psicologia das Emergências - II",
+
 "Redação Oficial",
+
 "Relação de Gênero - III",
+
 "Relacionamento Interpessoal - III",
+
 "Relações Humanas, Chefia e Liderança - I",
+
 "Saúde e Segurança Aplicadas ao Trabalho - II",
+
 "Sistema de Comando de Incidentes - III",
+
 "Tática de Atendimento Pré-Hospitalar",
+
 "Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
+
 "Tática de Combate a Incêndio Florestal",
+
 "Tática de Combate a Incêndio Urbano",
+
 "Tática de Salvamento Aquático",
+
 "Tática de Salvamento em Altura",
+
 "Tática de Salvamento Terrestre"
 
 ].sort();
@@ -429,12 +453,15 @@ const periodo=document.getElementById("periodo").value;
 if(periodo=="manha"){
 
 inicioRange.min=420;
+
 inicioRange.max=720;
 
 fimRange.min=420;
+
 fimRange.max=720;
 
 inicioRange.value=420;
+
 fimRange.value=720;
 
 }
@@ -442,12 +469,15 @@ fimRange.value=720;
 else{
 
 inicioRange.min=780;
+
 inicioRange.max=1020;
 
 fimRange.min=780;
+
 fimRange.max=1020;
 
 inicioRange.value=780;
+
 fimRange.value=1020;
 
 }
@@ -501,49 +531,6 @@ const inicio=parseInt(inicioRange.value);
 const fim=parseInt(fimRange.value);
 
 
-const snap=await new Promise(resolve=>
-
-onSnapshot(
-
-query(collection(db,"agendamentos"),
-
-where("data","==",dataSelecionada)
-
-),
-
-s=>resolve(s)
-
-)
-
-);
-
-
-let conflito=false;
-
-
-snap.forEach(d=>{
-
-const ag=d.data();
-
-
-if(inicio < ag.fim && fim > ag.inicio){
-
-conflito=true;
-
-}
-
-});
-
-
-if(conflito){
-
-alert("horário ocupado");
-
-return;
-
-}
-
-
 await addDoc(collection(db,"agendamentos"),{
 
 data:dataSelecionada,
@@ -564,6 +551,7 @@ status:"agendada"
 fechar();
 
 };
+
 
 
 window.fechar=()=>{
@@ -587,7 +575,7 @@ return;
 
 if(data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA){
 
-alert("Agendamentos apenas em Abril");
+alert("apenas Abril disponível");
 
 return;
 
@@ -596,7 +584,7 @@ return;
 
 if(FERIADOS.includes(data)){
 
-alert("feriado nacional");
+alert("feriado");
 
 return;
 
@@ -623,17 +611,31 @@ let lista=[];
 
 snapshot.forEach(d=>{
 
-lista.push({
+const item={
 
 id:d.id,
+
 ...d.data()
 
-});
+};
+
+
+if(
+
+item.data >= DATA_INICIO_PERMITIDA &&
+
+item.data <= DATA_FIM_PERMITIDA &&
+
+item.status!="excluido"
+
+){
+
+lista.push(item);
+
+}
+
 
 });
-
-
-lista=lista.filter(a=>a.status!="excluido");
 
 
 lista.sort((a,b)=>
@@ -777,7 +779,15 @@ snapshot.forEach(d=>{
 
 let a=d.data();
 
-if(a.status!="excluido"){
+if(
+
+a.status!="excluido" &&
+
+a.data >= DATA_INICIO_PERMITIDA &&
+
+a.data <= DATA_FIM_PERMITIDA
+
+){
 
 eventos.push({
 
