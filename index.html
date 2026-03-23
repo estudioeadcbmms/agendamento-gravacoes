@@ -304,8 +304,8 @@ const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
 
 
 // Abril apenas
-const MESES_PERMITIDOS=[3];
-
+const DATA_INICIO_PERMITIDA = "2026-04-01";
+const DATA_FIM_PERMITIDA = "2026-04-30";
 
 // feriados nacionais 2026
 const FERIADOS=[
@@ -781,9 +781,9 @@ dateClick:e=>{
 const data=new Date(e.dateStr);
 
 
-if(!MESES_PERMITIDOS.includes(data.getMonth())){
+if(e.dateStr < DATA_INICIO_PERMITIDA || e.dateStr > DATA_FIM_PERMITIDA){
 
-alert("agendamentos apenas para Abril");
+alert("Agendamentos liberados apenas para Abril");
 
 return;
 
@@ -801,7 +801,9 @@ dayCellDidMount:info=>{
 const dataStr=info.date.toISOString().split("T")[0];
 
 
-if(!MESES_PERMITIDOS.includes(info.date.getMonth())){
+const dataStr = info.date.toISOString().split("T")[0];
+
+if(dataStr < DATA_INICIO_PERMITIDA || dataStr > DATA_FIM_PERMITIDA){
 
 info.el.classList.add("dia-bloqueado");
 
