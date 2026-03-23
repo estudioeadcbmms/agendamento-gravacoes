@@ -1,100 +1,146 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Agendamento de Gravações CFS - 2026</title>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<title>Agendamento de Gravações CFS - 2026</title>
 
-  <style>
-    body { 
-      font-family: Arial; 
-      margin: 0; 
-      background:#0f172a; 
-      color:white; 
-      padding: 20px;
-    }
-    h2 { text-align:center; margin: 30px 0 10px; }
-    #calendar { 
-      max-width: 900px; 
-      margin: 0 auto; 
-      background:white; 
-      color:black; 
-      padding:15px; 
-      border-radius:10px;
-    }
-    #painel { 
-      max-width: 1100px; 
-      margin: 30px auto; 
-      background:white; 
-      color:black; 
-      padding:15px; 
-      border-radius:10px; 
-      overflow-y: auto; 
-      height: 480px; 
-      font-size: 1.4em;
-    }
-    table { width:100%; border-collapse: collapse; }
-    th, td { 
-      border: 1px solid #ddd; 
-      padding: 12px; 
-      text-align: left; 
-    }
-    th { 
-      background: #0f172a; 
-      color: white; 
-    }
-    .status { 
-      padding: 8px 12px; 
-      border-radius: 8px; 
-      color: white; 
-      font-weight: bold;
-    }
-    button { 
-      background: #0f172a; 
-      color: white; 
-      border: none; 
-      padding: 8px 12px; 
-      border-radius: 5px; 
-      cursor: pointer;
-    }
-    button:hover { background: #1e40af; }
-    button:disabled { background: #666; cursor: not-allowed; }
-    #auth-section { text-align:center; margin:20px; padding:15px; background:#1e293b; border-radius:10px; }
-    #google-login-btn { 
-      background:#4285F4; 
-      color:white; 
-      padding:12px 24px; 
-      font-size:1.1em; 
-      border:none; 
-      border-radius:5px; 
-      cursor:pointer; 
-    }
-    #auth-status { margin-top:15px; font-weight:bold; }
-  </style>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
+<style>
+
+body{
+font-family: Arial;
+margin:0;
+background:linear-gradient(180deg,#0f172a,#020617);
+color:white;
+padding:20px;
+}
+
+h2{
+text-align:center;
+margin-top:30px;
+}
+
+#calendar{
+max-width:900px;
+margin:20px auto;
+background:white;
+color:black;
+padding:20px;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+#painel{
+max-width:1100px;
+margin:30px auto;
+background:white;
+color:black;
+padding:20px;
+border-radius:14px;
+overflow:auto;
+height:480px;
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th{
+background:#020617;
+color:white;
+padding:14px;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #eee;
+}
+
+.status{
+padding:6px 14px;
+border-radius:20px;
+color:white;
+font-weight:bold;
+font-size:0.85em;
+}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin:2px;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+button:disabled{
+background:#999;
+cursor:not-allowed;
+}
+
+#auth-section{
+text-align:center;
+background:#1e293b;
+padding:20px;
+border-radius:14px;
+max-width:600px;
+margin:auto;
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+#google-login-btn{
+background:#4285F4;
+padding:12px 25px;
+font-size:1.1em;
+}
+
+</style>
+
 </head>
+
 <body>
 
 <h2>Agendamento de Gravações CFS - 2026</h2>
 
 <div id="auth-section">
-  <h3>Área de Administração</h3>
-  <button id="google-login-btn">Entrar com Google</button>
-  <p id="auth-status"></p>
+<h3>Área de Administração</h3>
+
+<button id="google-login-btn">Entrar com Google</button>
+
+<p id="auth-status"></p>
+
 </div>
 
 <div id="calendar"></div>
 
 <h2>Painel de Status das Gravações</h2>
+
 <div id="painel"></div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
-  const firebaseConfig = {
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where }
+from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+
+const firebaseConfig = {
     apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
     authDomain: "cfs-2026.firebaseapp.com",
     projectId: "cfs-2026",
@@ -105,221 +151,456 @@
   };
 
 const app = initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
+
 const db = getFirestore(app);
+
 const provider = new GoogleAuthProvider();
 
-// variáveis globais
-let currentUser = null;
-let isAdmin = false;
+let currentUser=null;
 
-const MEU_EMAIL = 'estudioeadcbmms@gmail.com';
+let isAdmin=false;
 
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
+const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
 
-  const statusEl = document.getElementById('auth-status');
-  const btn = document.getElementById('google-login-btn');
 
-  if (user) {
+const MATERIAS=[
 
-    isAdmin = user.email === MEU_EMAIL;
+"Combate ao Racismo e Homofobia - III",
+"Direito Militar - I",
+"Direitos Humanos - II",
+"Legislação Bombeiro Militar - III",
+"Psicologia das Emergências - II",
+"Relação de Gênero - III",
+"Relacionamento Interpessoal - III",
+"Relações Humanas, Chefia e Liderança - I",
+"Administração Bombeiro Militar - I",
+"Armamento Munição e Tiro - II",
+"Ciências Aplicadas a Atividade BM - II",
+"Comunicações e Tecnologia da Informação - II",
+"Equipamento Motomecanizado - II",
+"Informação e Contrainformação",
+"Metodologia de Ensino - I",
+"Ordem Unida - II",
+"Redação Oficial",
+"Saúde e Segurança Aplicadas ao Trabalho - II",
+"Atendimento com Produtos Perigosos - III",
+"Defesa Civil - II",
+"Educação Física Militar - III",
+"Prevenção e Proteção Contra Incêndio e Pânico - III",
+"Sistema de Comando de Incidentes - III",
+"Tática de Atendimento Pré-Hospitalar",
+"Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
+"Tática de Combate a Incêndio Florestal",
+"Tática de Combate a Incêndio Urbano",
+"Tática de Salvamento Aquático",
+"Tática de Salvamento em Altura",
+"Tática de Salvamento Terrestre"
 
-    statusEl.innerHTML = `
-      Logado como: ${user.displayName || user.email}
-      <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>
-    `;
+];
 
-    if (isAdmin) {
-      statusEl.innerHTML += "<br><small>Você é administrador</small>";
-    }
 
-    btn.style.display = "none";
+const HORARIOS=[
 
-  } else {
+{inicio:"07:00",fim:"08:00"},
+{inicio:"08:00",fim:"09:00"},
+{inicio:"09:00",fim:"10:00"},
+{inicio:"10:00",fim:"11:00"},
+{inicio:"11:00",fim:"12:00"},
+{inicio:"13:00",fim:"14:00"},
+{inicio:"14:00",fim:"15:00"},
+{inicio:"15:00",fim:"16:00"},
+{inicio:"16:00",fim:"17:00"}
 
-    isAdmin = false;
-    statusEl.textContent = "Faça login com Google";
-    btn.style.display = "inline-block";
+];
 
-  }
 
-  renderPainel();
+
+onAuthStateChanged(auth,user=>{
+
+currentUser=user;
+
+const status=document.getElementById("auth-status");
+
+const btn=document.getElementById("google-login-btn");
+
+if(user){
+
+isAdmin=user.email===ADMIN_EMAIL;
+
+status.innerHTML=`Logado como ${user.email}
+<br>
+<button onclick="logout()">Sair</button>
+`;
+
+btn.style.display="none";
+
+}else{
+
+isAdmin=false;
+
+status.innerHTML="Faça login para agendar";
+
+btn.style.display="inline-block";
+
+}
+
+renderPainel();
+
 });
 
-  window.loginWithGoogle = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      document.getElementById('auth-status').textContent = 'Erro ao entrar: ' + error.message;
-    }
-  };
 
-  window.logout = () => {
-    signOut(auth);
-  };
 
-  document.getElementById('google-login-btn').addEventListener('click', loginWithGoogle);
+window.loginWithGoogle=()=>signInWithPopup(auth,provider);
 
-  function definirPeriodo(hora){
-    if(hora >= 7 && hora < 12) return {inicio:"07:00", fim:"12:00", periodo:"manha"};
-    if(hora >= 13 && hora < 17) return {inicio:"13:30", fim:"17:00", periodo:"tarde"};
-    return null;
-  }
+window.logout=()=>signOut(auth);
 
-  function formatarData(dataStr) {
-    const date = new Date(dataStr);
-    return date.toLocaleDateString('pt-BR');
-  }
 
-  async function renderPainel() {
-    const snapshot = await getDocs(collection(db, "agendamentos"));
-    let html = `<table>
-      <thead><tr>
-          <th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th>Ação</th>
-      </tr></thead><tbody>`;
 
-    const lista = [];
-    snapshot.forEach(docSnap => {
-      lista.push({id: docSnap.id, ...docSnap.data()});
-    });
+document.getElementById("google-login-btn")
+.addEventListener("click",loginWithGoogle);
 
-    lista.sort((a,b) => a.data.localeCompare(b.data));
 
-    lista.forEach(item => {
-      const status = item.status || "agendada";
-      const cor = status === "finalizada" ? "green" : "orange";
-      const instrutor = item.instrutor || "Não informado";
-      const materia = item.materia || "Sem matéria";
 
-      const botaoFinalizar = isAdmin 
-        ? `<button onclick="markFinalizada('${item.id}')">Finalizar</button>`
-        : `<button disabled>Finalizar</button>`;
+function formatarData(data){
 
-      html += `<tr>
-          <td>${materia}</td>
-          <td>${instrutor}</td>
-          <td>${formatarData(item.data)}</td>
-          <td>${item.inicio} - ${item.fim}</td>
-          <td><span class="status" style="background:${cor};">${status.toUpperCase()}</span></td>
-          <td>${botaoFinalizar}</td>
-      </tr>`;
-    });
+return new Date(data)
+.toLocaleDateString("pt-BR");
 
-    html += `</tbody></table>`;
-    document.getElementById('painel').innerHTML = html || "<p style='text-align:center; color:#666;'>Nenhuma gravação agendada ainda.</p>";
+}
 
-    startAutoScroll(document.getElementById('painel'));
-  }
 
-  window.markFinalizada = async (id) => {
-    if (!currentUser || !isAdmin) {
-      alert("Apenas Gilberto logado pode marcar como finalizada.");
-      return;
-    }
-    if (confirm("Marcar esta gravação como FINALIZADA?")) {
-      try {
-        const docRef = doc(db, "agendamentos", id);
-        await updateDoc(docRef, { status: "finalizada" });
-        alert("✅ Finalizada!");
-        renderPainel();
-      } catch (err) {
-        alert("Erro: " + err.message);
-      }
-    }
-  };
 
-  let scrollInterval;
-  function startAutoScroll(painelDiv) {
-    clearInterval(scrollInterval);
-    scrollInterval = setInterval(() => {
-      if (painelDiv.scrollHeight > painelDiv.clientHeight) {
-        painelDiv.scrollTop += 1.5;
-        if (painelDiv.scrollTop + painelDiv.clientHeight >= painelDiv.scrollHeight - 10) {
-          painelDiv.scrollTop = 0;
-        }
-      }
-    }, 80);
-  }
+async function renderPainel(){
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-      initialView: 'dayGridMonth',
-      locale: 'pt-br',
+const snap=await getDocs(collection(db,"agendamentos"));
 
-      dateClick: async function(info) {
-        if (!currentUser) {
-          alert("Faça login com Google para agendar gravações!");
-          return;
-        }
+let html=`
 
-        let hora = prompt("Digite a hora (ex: 9 ou 14)");
-        if(!hora) return;
-        hora = parseInt(hora);
+<table>
 
-        const periodoInfo = definirPeriodo(hora);
-        if(!periodoInfo){
-          alert("Horário inválido! Use 7-11 ou 13-16.");
-          return;
-        }
+<thead>
 
-        const materia = prompt("Digite o nome da MATÉRIA:");
-        if(!materia) return;
+<tr>
 
-        const instrutor = prompt("Digite o nome do INSTRUTOR (pode deixar em branco):") || "Não informado";
+<th>Matéria</th>
 
-        const data = info.dateStr;
+<th>Instrutor</th>
 
-        const qCheck = query(
-          collection(db, "agendamentos"),
-          where("data", "==", data),
-          where("periodo", "==", periodoInfo.periodo)
-        );
-        const checkSnap = await getDocs(qCheck);
-        if (!checkSnap.empty) {
-          alert("Esse período já está ocupado por outra matéria!");
-          return;
-        }
+<th>Data</th>
 
-        if(confirm(`Matéria: ${materia}\nInstrutor: ${instrutor}\nHorário: ${periodoInfo.inicio} até ${periodoInfo.fim}\n\nConfirmar agendamento?`)){
-          try {
-            await addDoc(collection(db, "agendamentos"), {
-              data: data,
-              periodo: periodoInfo.periodo,
-              inicio: periodoInfo.inicio,
-              fim: periodoInfo.fim,
-              materia: materia,
-              instrutor: instrutor,
-              status: "agendada"
-            });
-            alert("✅ Agendado com sucesso!");
-            location.reload();
-          } catch (err) {
-            alert("Erro ao salvar: " + err.message);
-          }
-        }
-      },
+<th>Horário</th>
 
-      events: async function(fetchInfo, successCallback) {
-        const snapshot = await getDocs(collection(db, "agendamentos"));
-        const eventos = [];
-        snapshot.forEach(docSnap => {
-          const d = docSnap.data();
-          const status = d.status || "agendada";
-          eventos.push({
-            title: (d.materia || 'Sem matéria') + " - " + d.periodo.toUpperCase(),
-            start: d.data,
-            color: status === "finalizada" ? "#28a745" : (d.periodo === "manha" ? "#fd7e14" : "#007bff")
-          });
-        });
-        successCallback(eventos);
-      }
-    });
+<th>Status</th>
 
-    calendar.render();
-    renderPainel();
-    setInterval(renderPainel, 60000);
-  });
+<th>Ações</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+
+snap.forEach(docSnap=>{
+
+const d=docSnap.data();
+
+const cor=d.status==="finalizada"
+?"green"
+:"orange";
+
+
+html+=`
+
+<tr>
+
+<td>${d.materia}</td>
+
+<td>${d.instrutor}</td>
+
+<td>${formatarData(d.data)}</td>
+
+<td>${d.inicio} - ${d.fim}</td>
+
+<td>
+
+<span class="status" style="background:${cor}">
+
+${d.status}
+
+</span>
+
+</td>
+
+<td>
+
+${isAdmin?`
+
+<button onclick="finalizar('${docSnap.id}')">Finalizar</button>
+
+<button onclick="editar('${docSnap.id}')">Editar</button>
+
+<button onclick="excluir('${docSnap.id}')">Excluir</button>
+
+`:""}
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+
+html+="</tbody></table>";
+
+document.getElementById("painel").innerHTML=html;
+
+}
+
+
+
+window.finalizar=async id=>{
+
+await updateDoc(doc(db,"agendamentos",id),{
+
+status:"finalizada"
+
+});
+
+renderPainel();
+
+};
+
+
+
+window.editar=async id=>{
+
+const novaMateria=prompt(
+
+MATERIAS.map((m,i)=>
+
+`${i+1} - ${m}`
+
+).join("\n")
+
+);
+
+
+const novoHorario=prompt(
+
+HORARIOS.map((h,i)=>
+
+`${i+1} - ${h.inicio} às ${h.fim}`
+
+).join("\n")
+
+);
+
+
+await updateDoc(doc(db,"agendamentos",id),{
+
+materia:MATERIAS[novaMateria-1],
+
+inicio:HORARIOS[novoHorario-1].inicio,
+
+fim:HORARIOS[novoHorario-1].fim
+
+});
+
+renderPainel();
+
+};
+
+
+
+window.excluir=async id=>{
+
+if(confirm("Excluir?")){
+
+await updateDoc(doc(db,"agendamentos",id),{
+
+status:"excluido"
+
+});
+
+renderPainel();
+
+}
+
+};
+
+
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+
+const calendar=new FullCalendar.Calendar(
+
+document.getElementById("calendar"),
+
+{
+
+initialView:"dayGridMonth",
+
+locale:"pt-br",
+
+
+dateClick:async info=>{
+
+if(!currentUser){
+
+alert("Faça login");
+
+return;
+
+}
+
+
+const materiaIndex=prompt(
+
+MATERIAS.map((m,i)=>
+
+`${i+1} - ${m}`
+
+).join("\n")
+
+);
+
+
+const horarioIndex=prompt(
+
+HORARIOS.map((h,i)=>
+
+`${i+1} - ${h.inicio} às ${h.fim}`
+
+).join("\n")
+
+);
+
+
+const instrutor=prompt("Instrutor");
+
+
+const data=info.dateStr;
+
+
+const q=query(
+
+collection(db,"agendamentos"),
+
+where("data","==",data),
+
+where("inicio","==",HORARIOS[horarioIndex-1].inicio)
+
+);
+
+
+const snap=await getDocs(q);
+
+
+if(!snap.empty){
+
+alert("Horário ocupado");
+
+return;
+
+}
+
+
+await addDoc(
+
+collection(db,"agendamentos"),
+
+{
+
+data,
+
+materia:MATERIAS[materiaIndex-1],
+
+inicio:HORARIOS[horarioIndex-1].inicio,
+
+fim:HORARIOS[horarioIndex-1].fim,
+
+instrutor:instrutor||"",
+
+status:"agendada"
+
+}
+
+);
+
+
+renderPainel();
+
+calendar.refetchEvents();
+
+},
+
+
+
+events:async(info,success)=>{
+
+
+const snap=await getDocs(collection(db,"agendamentos"));
+
+const eventos=[];
+
+
+snap.forEach(doc=>{
+
+
+const d=doc.data();
+
+
+if(d.status!=="excluido"){
+
+
+eventos.push({
+
+title:d.materia,
+
+start:d.data,
+
+color:d.status==="finalizada"
+
+?"green"
+
+:"#2563eb"
+
+});
+
+
+}
+
+
+});
+
+
+success(eventos);
+
+
+}
+
+
+}
+
+
+);
+
+
+calendar.render();
+
+renderPainel();
+
+});
+
+
 </script>
 
 </body>
