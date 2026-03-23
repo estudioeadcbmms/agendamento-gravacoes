@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Agendamento de Gravações CFS - 2026</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
+  <style>
+    body { 
+      font-family: Arial; 
+      margin: 0; 
+      background:#0f172a; 
+      color:white; 
+      padding: 20px;
+    }
+    h2 { text-align:center; margin: 30px 0 10px; }
+    #calendar { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      background:white; 
+      color:black; 
+      padding:15px; 
+      border-radius:10px;
+    }
+    #painel { 
+      max-width: 1100px; 
+      margin: 30px auto; 
+      background:white; 
+      color:black; 
+      padding:15px; 
+      border-radius:10px; 
+      overflow-y: auto; 
+      height: 480px; 
+      font-size: 1.4em;
+    }
+    table { width:100%; border-collapse: collapse; }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 12px; 
+      text-align: left; 
+    }
+    th { 
+      background: #0f172a; 
+      color: white; 
+    }
+    .status { 
+      padding: 8px 12px; 
+      border-radius: 8px; 
+      color: white; 
+      font-weight: bold;
+    }
+    button { 
+      background: #0f172a; 
+      color: white; 
+      border: none; 
+      padding: 8px 12px; 
+      border-radius: 5px; 
+      cursor: pointer;
+    }
+    button:hover { background: #1e40af; }
+  </style>
+</head>
+<body>
+
+<h2>Agendamento de Gravações CFS - 2026</h2>
+<div id="calendar"></div>
+
+<h2>Painel de Status das Gravações (para TV - rola automaticamente)</h2>
+<div id="painel"></div>
+
+<!-- FullCalendar -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<!-- Firebase Modular v10+ via CDN (compatível com GitHub Pages) -->
+<script type="module">
+  // Imports modulares do Firebase
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+  // Sua configuração real (colei exatamente o que você enviou)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
+    authDomain: "cfs-2026.firebaseapp.com",
+    projectId: "cfs-2026",
+    storageBucket: "cfs-2026.firebasestorage.app",
+    messagingSenderId: "1065046463895",
+    appId: "1:1065046463895:web:14f86d3e9ed228a192e0d2",
+    measurementId: "G-2PBTJ0S516"
+  };
+
+  // Inicializa Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function definirPeriodo(hora){
+    if(hora >= 7 && hora < 12) return {inicio:"07:00", fim:"12:00", periodo:"manha"};
+    if(hora >= 13 && hora < 17) return {inicio:"13:30", fim:"17:00", periodo:"tarde"};
+    return null;
+  }
+
+  function formatarData(dataStr) {
+    const date = new Date(dataStr);
+    return date.toLocaleDateString('pt-BR');
+  }
+
+  async function renderPainel() {
+    const q = query(collection(db, "agendamentos"));
+    const snapshot = await getDocs(q);
+    let html = `<table>
+      <thead><tr>
+          <th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th>Ação</th>
+      </tr></thead><tbody>`;
+
+    const lista = [];
+    snapshot.forEach(docSnap => {
+      lista.push({id: docSnap.id, ...docSnap.data()});
+    });
+
+    lista.sort((a,b) => a.data.localeCompare(b.data));
+
+    lista.forEach(item => {
+      const status = item.status || "agendada";
+      const cor = status === "finalizada" ? "green" : "orange";
+      const instrutor = item.instrutor || "Não informado";
+      const materia = item.materia || "Sem matéria";
+
+      html += `<tr>
+          <td>${materia}</td>
+          <td>${instrutor}</td>
+          <td>${formatarData(item.data)}</td>
+          <td>${item.inicio} - ${item.fim}</td>
+          <td><span class="status" style="background:${cor};">${status.toUpperCase()}</span></td>
+          <td><button onclick="markFinalizada('${item.id}')">Finalizar</button></td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    const painel = document.getElementById('painel');
+    painel.innerHTML = html || "<p style='text-align:center; color:#666;'>Nenhuma gravação agendada ainda.</p>";
+
+    startAutoScroll(painel);
+  }
+
+  window.markFinalizada = async function(id) {  // Tornar global para onclick funcionar
+    if(confirm("Marcar esta gravação como FINALIZADA?")) {
+      const docRef = doc(db, "agendamentos", id);
+      await updateDoc(docRef, {status: "finalizada"});
+      alert("✅ Gravação finalizada!");
+      renderPainel();
+    }
+  };
+
+  let scrollInterval;
+  function startAutoScroll(painelDiv) {
+    clearInterval(scrollInterval);
+    scrollInterval = setInterval(() => {
+      if (painelDiv.scrollHeight > painelDiv.clientHeight) {
+        painelDiv.scrollTop += 1.5;
+        if (painelDiv.scrollTop + painelDiv.clientHeight >= painelDiv.scrollHeight - 10) {
+          painelDiv.scrollTop = 0;
+        }
+      }
+    }, 80);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      initialView: 'dayGridMonth',
+      locale: 'pt-br',
+
+      dateClick: async function(info) {
+        let hora = prompt("Digite a hora (ex: 9 ou 14)");
+        if(!hora) return;
+        hora = parseInt(hora);
+
+        const periodoInfo = definirPeriodo(hora);
+        if(!periodoInfo){
+          alert("Horário inválido! Use 7-11 ou 13-16.");
+          return;
+        }
+
+        const materia = prompt("Digite o nome da MATÉRIA:");
+        if(!materia) return;
+
+        const instrutor = prompt("Digite o nome do INSTRUTOR (pode deixar em branco):") || "Não informado";
+
+        const data = info.dateStr;
+
+        // Verifica duplicidade
+        const qCheck = query(
+          collection(db, "agendamentos"),
+          where("data", "==", data),
+          where("periodo", "==", periodoInfo.periodo)
+        );
+        const checkSnap = await getDocs(qCheck);
+        if (!checkSnap.empty) {
+          alert("Esse período já está ocupado por outra matéria!");
+          return;
+        }
+
+        if(confirm(`Matéria: ${materia}\nInstrutor: ${instrutor}\nHorário: ${periodoInfo.inicio} até ${periodoInfo.fim}\n\nConfirmar agendamento?`)){
+          await addDoc(collection(db, "agendamentos"), {
+            data: data,
+            periodo: periodoInfo.periodo,
+            inicio: periodoInfo.inicio,
+            fim: periodoInfo.fim,
+            materia: materia,
+            instrutor: instrutor,
+            status: "agendada"
+          });
+
+          alert("✅ Agendado com sucesso!");
+          location.reload();
+        }
+      },
+
+      events: async function(fetchInfo, successCallback) {
+        const q = query(collection(db, "agendamentos"));
+        const snapshot = await getDocs(q);
+        const eventos = [];
+        snapshot.forEach(docSnap => {
+          const d = docSnap.data();
+          const status = d.status || "agendada";
+          eventos.push({
+            title: (d.materia || 'Sem matéria') + " - " + d.periodo.toUpperCase(),
+            start: d.data,
+            color: status === "finalizada" ? "#28a745" : (d.periodo === "manha" ? "#fd7e14" : "#007bff")
+          });
+        });
+        successCallback(eventos);
+      }
+    });
+
+    calendar.render();
+    renderPainel();
+    setInterval(renderPainel, 60000);  // Atualiza a cada 1 min
+  });
+</script>
+
+</body>
+</html>
