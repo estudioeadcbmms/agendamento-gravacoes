@@ -255,11 +255,7 @@ doc,
 
 updateDoc,
 
-onSnapshot,
-
-query,
-
-where
+onSnapshot
 
 }from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -308,78 +304,16 @@ const DATA_INICIO_PERMITIDA="2026-04-01";
 const DATA_FIM_PERMITIDA="2026-04-30";
 
 
-
-const FERIADOS=[
-
-"2026-04-03",
-
-"2026-04-21"
-
-];
+const FERIADOS=["2026-04-03","2026-04-21"];
 
 
 
 const MATERIAS=[
 
 "Administração Bombeiro Militar - I",
-
-"Armamento Munição e Tiro - II",
-
-"Atendimento com Produtos Perigosos - III",
-
-"Ciências Aplicadas a Atividade BM - II",
-
-"Combate ao Racismo e Homofobia - III",
-
 "Comunicações e Tecnologia da Informação - II",
-
-"Defesa Civil - II",
-
 "Direito Militar - I",
-
-"Direitos Humanos - II",
-
-"Educação Física Militar - III",
-
-"Equipamento Motomecanizado - II",
-
-"Informação e Contrainformação",
-
-"Legislação Bombeiro Militar - III",
-
-"Metodologia de Ensino - I",
-
-"Ordem Unida - II",
-
-"Prevenção e Proteção Contra Incêndio e Pânico - III",
-
-"Psicologia das Emergências - II",
-
-"Redação Oficial",
-
-"Relação de Gênero - III",
-
-"Relacionamento Interpessoal - III",
-
-"Relações Humanas, Chefia e Liderança - I",
-
-"Saúde e Segurança Aplicadas ao Trabalho - II",
-
-"Sistema de Comando de Incidentes - III",
-
-"Tática de Atendimento Pré-Hospitalar",
-
-"Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
-
-"Tática de Combate a Incêndio Florestal",
-
-"Tática de Combate a Incêndio Urbano",
-
-"Tática de Salvamento Aquático",
-
-"Tática de Salvamento em Altura",
-
-"Tática de Salvamento Terrestre"
+"Educação Física Militar - III"
 
 ].sort();
 
@@ -439,6 +373,16 @@ return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
 
 
 
+function formatarDataBR(dataISO){
+
+const partes=dataISO.split("-");
+
+return partes[2]+"/"+partes[1]+"/"+partes[0];
+
+}
+
+
+
 const inicioRange=document.getElementById("inicioRange");
 
 const fimRange=document.getElementById("fimRange");
@@ -447,37 +391,22 @@ const fimRange=document.getElementById("fimRange");
 
 function configurarPeriodo(){
 
-const periodo=document.getElementById("periodo").value;
-
-
-if(periodo=="manha"){
+if(document.getElementById("periodo").value=="manha"){
 
 inicioRange.min=420;
-
 inicioRange.max=720;
-
 fimRange.min=420;
-
 fimRange.max=720;
-
 inicioRange.value=420;
-
 fimRange.value=720;
 
-}
-
-else{
+}else{
 
 inicioRange.min=780;
-
 inicioRange.max=1020;
-
 fimRange.min=780;
-
 fimRange.max=1020;
-
 inicioRange.value=780;
-
 fimRange.value=1020;
 
 }
@@ -497,15 +426,12 @@ let inicio=parseInt(inicioRange.value);
 
 let fim=parseInt(fimRange.value);
 
-
 if(inicio>=fim){
 
 fim=inicio+15;
-
 fimRange.value=fim;
 
 }
-
 
 document.getElementById("horarioEscolhido").innerText=
 
@@ -518,35 +444,22 @@ inicioRange.oninput=atualizarRange;
 
 fimRange.oninput=atualizarRange;
 
-
 configurarPeriodo();
 
 
 
 window.salvar=async()=>{
 
-
-const inicio=parseInt(inicioRange.value);
-
-const fim=parseInt(fimRange.value);
-
-
 await addDoc(collection(db,"agendamentos"),{
 
 data:dataSelecionada,
-
 materia:selectMateria.value,
-
 instrutor:document.getElementById("instrutor").value,
-
-inicio,
-
-fim,
-
+inicio:parseInt(inicioRange.value),
+fim:parseInt(fimRange.value),
 status:"agendada"
 
 });
-
 
 fechar();
 
@@ -572,15 +485,13 @@ return;
 
 }
 
-
 if(data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA){
 
-alert("apenas Abril disponível");
+alert("apenas Abril");
 
 return;
 
 }
-
 
 if(FERIADOS.includes(data)){
 
@@ -590,9 +501,7 @@ return;
 
 }
 
-
 dataSelecionada=data;
-
 
 document.getElementById("modal").style.display="flex";
 
@@ -602,56 +511,38 @@ document.getElementById("modal").style.display="flex";
 
 function iniciarRealtime(){
 
-
 onSnapshot(collection(db,"agendamentos"),snapshot=>{
-
 
 let lista=[];
 
-
 snapshot.forEach(d=>{
 
-const item={
-
-id:d.id,
-
-...d.data()
-
-};
-
+const a=d.data();
 
 if(
 
-item.data >= DATA_INICIO_PERMITIDA &&
-
-item.data <= DATA_FIM_PERMITIDA &&
-
-item.status!="excluido"
+a.data >= DATA_INICIO_PERMITIDA &&
+a.data <= DATA_FIM_PERMITIDA &&
+a.status!="excluido"
 
 ){
 
-lista.push(item);
+lista.push(a);
 
 }
-
 
 });
 
 
-lista.sort((a,b)=>
-
-new Date(a.data)-new Date(b.data)
-
-);
+lista.sort((a,b)=>a.data.localeCompare(b.data));
 
 
 let html="<table>";
 
-html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th></th></tr>";
+html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th></tr>";
 
 
 lista.forEach(a=>{
-
 
 html+=`
 
@@ -661,41 +552,11 @@ html+=`
 
 <td>${a.instrutor}</td>
 
-<td>${new Date(a.data).toLocaleDateString("pt-BR")}</td>
+<td>${formatarDataBR(a.data)}</td>
 
-<td>
+<td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
 
-${minParaHora(a.inicio)}
-
--
-
-${minParaHora(a.fim)}
-
-</td>
-
-<td>
-
-<span class="status"
-
-style="background:${a.status=="finalizada"?"green":"orange"}">
-
-${a.status}
-
-</span>
-
-</td>
-
-<td>
-
-${isAdmin?`
-
-<button onclick="finalizar('${a.id}')">✔</button>
-
-<button onclick="excluir('${a.id}')">🗑</button>
-
-`:""}
-
-</td>
+<td>${a.status}</td>
 
 </tr>
 
@@ -716,29 +577,6 @@ calendar.refetchEvents();
 
 
 
-window.finalizar=id=>{
-
-updateDoc(doc(db,"agendamentos",id),{
-
-status:"finalizada"
-
-});
-
-};
-
-
-window.excluir=id=>{
-
-updateDoc(doc(db,"agendamentos",id),{
-
-status:"excluido"
-
-});
-
-};
-
-
-
 const calendar=new FullCalendar.Calendar(
 
 document.getElementById("calendar"),
@@ -752,15 +590,15 @@ dateClick:e=>abrir(e.dateStr),
 
 dayCellDidMount:info=>{
 
-const dataStr=info.date.toISOString().split("T")[0];
+const d=info.date.toISOString().split("T")[0];
 
-if(dataStr < DATA_INICIO_PERMITIDA || dataStr > DATA_FIM_PERMITIDA){
+if(d < DATA_INICIO_PERMITIDA || d > DATA_FIM_PERMITIDA){
 
 info.el.classList.add("dia-bloqueado");
 
 }
 
-if(FERIADOS.includes(dataStr)){
+if(FERIADOS.includes(d)){
 
 info.el.classList.add("feriado");
 
@@ -777,25 +615,20 @@ let eventos=[];
 
 snapshot.forEach(d=>{
 
-let a=d.data();
+const a=d.data();
 
 if(
 
-a.status!="excluido" &&
-
 a.data >= DATA_INICIO_PERMITIDA &&
-
-a.data <= DATA_FIM_PERMITIDA
+a.data <= DATA_FIM_PERMITIDA &&
+a.status!="excluido"
 
 ){
 
 eventos.push({
 
 title:a.materia,
-
-start:a.data,
-
-color:a.status=="finalizada"?"green":"blue"
+start:a.data
 
 });
 
