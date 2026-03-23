@@ -109,34 +109,39 @@
   const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
-  // ← AJUSTE AQUI: coloque seu email exato da conta Google
-  const MEU_EMAIL = 'gilberto@gmail.com';  // ← MUDE PARA O SEU EMAIL REAL
+const MEU_EMAIL = 'estudioeadcbmms@gmail.com'; // seu email real
 
-  let currentUser = null;
-  let isAdmin = false;
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  const statusEl = document.getElementById('auth-status');
+  const btn = document.getElementById('google-login-btn');
 
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    const statusEl = document.getElementById('auth-status');
-    const btn = document.getElementById('google-login-btn');
+  if (user) {
 
-    if (user) {
-      isAdmin = estudioeadcbmms@gmail.com;
-      statusEl.innerHTML = `Logado como: ${user.displayName || user.email} 
-        <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>`;
-      if (isAdmin) {
-        statusEl.innerHTML += '<br><small>(Você tem permissão para finalizar gravações)</small>';
-      } else {
-        statusEl.innerHTML += '<br><small>(Somente Gilberto pode finalizar gravações)</small>';
-      }
-      btn.style.display = 'none';
+    // verifica se é o administrador
+    isAdmin = user.email === MEU_EMAIL;
+
+    statusEl.innerHTML = `Logado como: ${user.displayName || user.email} 
+      <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>`;
+
+    if (isAdmin) {
+      statusEl.innerHTML += '<br><small>(Você tem permissão para finalizar gravações)</small>';
     } else {
-      isAdmin = false;
-      statusEl.textContent = 'Faça login com Google para agendar ou finalizar (apenas Gilberto pode finalizar)';
-      btn.style.display = 'inline-block';
+      statusEl.innerHTML += '<br><small>(Somente administrador pode finalizar gravações)</small>';
     }
-    renderPainel();  // recarrega painel para mostrar/esconder botões
-  });
+
+    btn.style.display = 'none';
+
+  } else {
+
+    isAdmin = false;
+    statusEl.textContent = 'Faça login com Google para agendar ou finalizar';
+    btn.style.display = 'inline-block';
+
+  }
+
+  renderPainel();
+});
 
   window.loginWithGoogle = async () => {
     try {
