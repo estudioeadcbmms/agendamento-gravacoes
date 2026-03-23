@@ -58,26 +58,42 @@
       cursor: pointer;
     }
     button:hover { background: #1e40af; }
+    button:disabled { background: #666; cursor: not-allowed; }
+    #auth-section { text-align:center; margin:20px; padding:15px; background:#1e293b; border-radius:10px; }
+    #google-login-btn { 
+      background:#4285F4; 
+      color:white; 
+      padding:12px 24px; 
+      font-size:1.1em; 
+      border:none; 
+      border-radius:5px; 
+      cursor:pointer; 
+    }
+    #auth-status { margin-top:15px; font-weight:bold; }
   </style>
 </head>
 <body>
 
 <h2>Agendamento de Gravações CFS - 2026</h2>
+
+<div id="auth-section">
+  <h3>Área de Administração</h3>
+  <button id="google-login-btn">Entrar com Google</button>
+  <p id="auth-status"></p>
+</div>
+
 <div id="calendar"></div>
 
 <h2>Painel de Status das Gravações (para TV - rola automaticamente)</h2>
 <div id="painel"></div>
 
-<!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-<!-- Firebase Modular v10+ via CDN (compatível com GitHub Pages) -->
 <script type="module">
-  // Imports modulares do Firebase
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
-  // Sua configuração real (colei exatamente o que você enviou)
   const firebaseConfig = {
     apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
     authDomain: "cfs-2026.firebaseapp.com",
@@ -88,9 +104,53 @@
     measurementId: "G-2PBTJ0S516"
   };
 
-  // Inicializa Firebase
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
   const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // ← AJUSTE AQUI: coloque seu email exato da conta Google
+  const MEU_EMAIL = 'gilberto@gmail.com';  // ← MUDE PARA O SEU EMAIL REAL
+
+  let currentUser = null;
+  let isAdmin = false;
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    const statusEl = document.getElementById('auth-status');
+    const btn = document.getElementById('google-login-btn');
+
+    if (user) {
+      isAdmin = estudioeadcbmms@gmail.com;
+      statusEl.innerHTML = `Logado como: ${user.displayName || user.email} 
+        <button onclick="logout()" style="margin-left:10px; background:#db4437;">Sair</button>`;
+      if (isAdmin) {
+        statusEl.innerHTML += '<br><small>(Você tem permissão para finalizar gravações)</small>';
+      } else {
+        statusEl.innerHTML += '<br><small>(Somente Gilberto pode finalizar gravações)</small>';
+      }
+      btn.style.display = 'none';
+    } else {
+      isAdmin = false;
+      statusEl.textContent = 'Faça login com Google para agendar ou finalizar (apenas Gilberto pode finalizar)';
+      btn.style.display = 'inline-block';
+    }
+    renderPainel();  // recarrega painel para mostrar/esconder botões
+  });
+
+  window.loginWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      document.getElementById('auth-status').textContent = 'Erro ao entrar: ' + error.message;
+    }
+  };
+
+  window.logout = () => {
+    signOut(auth);
+  };
+
+  document.getElementById('google-login-btn').addEventListener('click', loginWithGoogle);
 
   function definirPeriodo(hora){
     if(hora >= 7 && hora < 12) return {inicio:"07:00", fim:"12:00", periodo:"manha"};
@@ -104,8 +164,7 @@
   }
 
   async function renderPainel() {
-    const q = query(collection(db, "agendamentos"));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, "agendamentos"));
     let html = `<table>
       <thead><tr>
           <th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th>Ação</th>
@@ -124,29 +183,40 @@
       const instrutor = item.instrutor || "Não informado";
       const materia = item.materia || "Sem matéria";
 
+      const botaoFinalizar = isAdmin 
+        ? `<button onclick="markFinalizada('${item.id}')">Finalizar</button>`
+        : `<button disabled>Finalizar</button>`;
+
       html += `<tr>
           <td>${materia}</td>
           <td>${instrutor}</td>
           <td>${formatarData(item.data)}</td>
           <td>${item.inicio} - ${item.fim}</td>
           <td><span class="status" style="background:${cor};">${status.toUpperCase()}</span></td>
-          <td><button onclick="markFinalizada('${item.id}')">Finalizar</button></td>
+          <td>${botaoFinalizar}</td>
       </tr>`;
     });
 
     html += `</tbody></table>`;
-    const painel = document.getElementById('painel');
-    painel.innerHTML = html || "<p style='text-align:center; color:#666;'>Nenhuma gravação agendada ainda.</p>";
+    document.getElementById('painel').innerHTML = html || "<p style='text-align:center; color:#666;'>Nenhuma gravação agendada ainda.</p>";
 
-    startAutoScroll(painel);
+    startAutoScroll(document.getElementById('painel'));
   }
 
-  window.markFinalizada = async function(id) {  // Tornar global para onclick funcionar
-    if(confirm("Marcar esta gravação como FINALIZADA?")) {
-      const docRef = doc(db, "agendamentos", id);
-      await updateDoc(docRef, {status: "finalizada"});
-      alert("✅ Gravação finalizada!");
-      renderPainel();
+  window.markFinalizada = async (id) => {
+    if (!currentUser || !isAdmin) {
+      alert("Apenas Gilberto logado pode marcar como finalizada.");
+      return;
+    }
+    if (confirm("Marcar esta gravação como FINALIZADA?")) {
+      try {
+        const docRef = doc(db, "agendamentos", id);
+        await updateDoc(docRef, { status: "finalizada" });
+        alert("✅ Finalizada!");
+        renderPainel();
+      } catch (err) {
+        alert("Erro: " + err.message);
+      }
     }
   };
 
@@ -169,6 +239,11 @@
       locale: 'pt-br',
 
       dateClick: async function(info) {
+        if (!currentUser) {
+          alert("Faça login com Google para agendar gravações!");
+          return;
+        }
+
         let hora = prompt("Digite a hora (ex: 9 ou 14)");
         if(!hora) return;
         hora = parseInt(hora);
@@ -186,7 +261,6 @@
 
         const data = info.dateStr;
 
-        // Verifica duplicidade
         const qCheck = query(
           collection(db, "agendamentos"),
           where("data", "==", data),
@@ -199,24 +273,26 @@
         }
 
         if(confirm(`Matéria: ${materia}\nInstrutor: ${instrutor}\nHorário: ${periodoInfo.inicio} até ${periodoInfo.fim}\n\nConfirmar agendamento?`)){
-          await addDoc(collection(db, "agendamentos"), {
-            data: data,
-            periodo: periodoInfo.periodo,
-            inicio: periodoInfo.inicio,
-            fim: periodoInfo.fim,
-            materia: materia,
-            instrutor: instrutor,
-            status: "agendada"
-          });
-
-          alert("✅ Agendado com sucesso!");
-          location.reload();
+          try {
+            await addDoc(collection(db, "agendamentos"), {
+              data: data,
+              periodo: periodoInfo.periodo,
+              inicio: periodoInfo.inicio,
+              fim: periodoInfo.fim,
+              materia: materia,
+              instrutor: instrutor,
+              status: "agendada"
+            });
+            alert("✅ Agendado com sucesso!");
+            location.reload();
+          } catch (err) {
+            alert("Erro ao salvar: " + err.message);
+          }
         }
       },
 
       events: async function(fetchInfo, successCallback) {
-        const q = query(collection(db, "agendamentos"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection(db, "agendamentos"));
         const eventos = [];
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
@@ -233,7 +309,7 @@
 
     calendar.render();
     renderPainel();
-    setInterval(renderPainel, 60000);  // Atualiza a cada 1 min
+    setInterval(renderPainel, 60000);
   });
 </script>
 
