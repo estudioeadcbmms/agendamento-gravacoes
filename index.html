@@ -132,6 +132,12 @@ border-radius:16px;
 width:380px;
 }
 
+.fc-daygrid-event{
+border-radius:6px;
+font-size:12px;
+padding:3px 6px;
+}
+
 .fc-day-today{
 background:#e0f2fe !important;
 }
@@ -314,19 +320,6 @@ const FERIADOS=["2026-04-21"];
 
 
 
-const CORES={
-
-"Direito Militar - I":"#2563eb",
-"Educação Física Militar - III":"#16a34a",
-"Comunicações e Tecnologia da Informação - II":"#ea580c",
-"Combate ao Racismo e Homofobia - III":"#9333ea",
-"Administração Bombeiro Militar - I":"#0ea5e9",
-"Metodologia de Ensino - I":"#6366f1"
-
-};
-
-
-
 const MATERIAS=[
 
 "Administração Bombeiro Militar - I",
@@ -378,10 +371,28 @@ selectMateria.appendChild(o);
 });
 
 
+
+function corDaMateria(texto){
+
+let hash=0;
+
+for(let i=0;i<texto.length;i++){
+
+hash=texto.charCodeAt(i)+((hash<<5)-hash);
+
+}
+
+const cor=`hsl(${hash%360},65%,55%)`;
+
+return cor;
+
+}
+
+
+
 onAuthStateChanged(auth,user=>{
 
 currentUser=user;
-
 isAdmin=user?.email===ADMIN_EMAIL;
 
 document.getElementById("statusLogin").innerHTML=
@@ -575,12 +586,12 @@ lista.sort((a,b)=>a.data.localeCompare(b.data));
 
 let html="<table>";
 
-html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th></tr>";
+html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr>";
 
 
 lista.forEach(a=>{
 
-const cor=CORES[a.materia] || "#2563eb";
+const cor=corDaMateria(a.materia);
 
 html+=`
 
@@ -593,8 +604,6 @@ html+=`
 <td>${formatarDataBR(a.data)}</td>
 
 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
-
-<td><span class="status ${a.status}">${a.status}</span></td>
 
 </tr>
 
@@ -648,7 +657,7 @@ eventos.push({
 
 title:a.materia,
 start:a.data,
-color:CORES[a.materia] || "#2563eb"
+color:corDaMateria(a.materia)
 
 });
 
