@@ -13,44 +13,23 @@ body{
     color:white;
     padding:30px;
 }
-h2{
-    text-align:center;
-    font-weight:600;
-}
+h2, h3 { text-align:center; font-weight:600; }
 .card{
     background:white;
     color:black;
     padding:25px;
     border-radius:18px;
-    max-width:950px;
+    max-width:1100px;
     margin:25px auto;
     box-shadow:0 10px 30px rgba(0,0,0,0.35);
 }
-#calendar{
-    max-width:950px;
-    margin:auto;
-}
-#painel{
-    max-width:1100px;
-    margin:auto;
-    max-height:460px;
-    overflow:auto;
-}
-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:14px;
-}
-th{
-    background:#020617;
-    color:white;
-    padding:14px;
-    text-align:left;
-}
-td{
-    padding:12px;
-    border-bottom:1px solid #eee;
-}
+#calendar{ max-width:1100px; margin:auto; }
+#painel{ max-height:520px; overflow:auto; }
+
+table{ width:100%; border-collapse:collapse; font-size:14px; }
+th{ background:#020617; color:white; padding:14px; text-align:left; }
+td{ padding:12px; border-bottom:1px solid #eee; vertical-align:middle; }
+
 .status{
     padding:6px 14px;
     border-radius:20px;
@@ -58,6 +37,9 @@ td{
     font-size:12px;
     font-weight:600;
 }
+.agendada{ background:#f59e0b; }
+.finalizada{ background:#10b981; }
+
 button{
     background:#2563eb;
     color:white;
@@ -68,28 +50,21 @@ button{
     margin:2px;
     font-size:13px;
 }
-.btnDelete{
-    background:#dc2626;
-}
+.btnFinalizar{ background:#10b981; }
+.btnDelete{ background:#dc2626; }
+
 select,input{
     padding:10px;
-    margin-top:6px;
-    margin-bottom:14px;
+    margin:6px 0 14px 0;
     border-radius:8px;
     border:1px solid #d1d5db;
     width:100%;
 }
-.range{
-    width:100%;
-    accent-color:#2563eb;
-}
+.range{ width:100%; accent-color:#2563eb; }
+
 #modal{
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    background:rgba(0,0,0,0.55);
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.6);
     display:none;
     align-items:center;
     justify-content:center;
@@ -100,25 +75,12 @@ select,input{
     color:black;
     padding:28px;
     border-radius:16px;
-    width:380px;
+    width:400px;
 }
-.fc-daygrid-event{
-    border-radius:6px;
-    font-size:12px;
-    padding:3px 6px;
-}
-.fc-day-today{
-    background:#e0f2fe !important;
-}
-.dia-bloqueado{
-    background:#f1f5f9 !important;
-    opacity:0.5;
-}
-.feriado{
-    background:#fee2e2 !important;
-    color:#991b1b !important;
-    font-weight:600;
-}
+.fc-daygrid-event{ border-radius:6px; font-size:12px; padding:4px 6px; }
+.fc-day-today{ background:#e0f2fe !important; }
+.dia-bloqueado{ background:#f1f5f9 !important; opacity:0.6; cursor:not-allowed; }
+.feriado{ background:#fee2e2 !important; color:#991b1b !important; font-weight:600; }
 </style>
 </head>
 <body>
@@ -158,7 +120,7 @@ select,input{
         <label>Fim</label>
         <input type="range" id="fimRange" class="range" step="15">
         
-        <p id="horarioEscolhido" style="font-weight:600; margin:10px 0;"></p>
+        <p id="horarioEscolhido" style="font-weight:600; margin:12px 0;"></p>
         
         <button onclick="salvar()">Salvar Agendamento</button>
         <button onclick="fechar()">Cancelar</button>
@@ -168,19 +130,8 @@ select,input{
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithPopup, 
-    onAuthStateChanged, 
-    signOut 
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    onSnapshot 
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
@@ -197,74 +148,67 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
+let isAdmin = false;
 const ADMIN_EMAIL = "estudioeadcbmms@gmail.com";
-const DATA_INICIO_PERMITIDA = "2026-04-01";
-const DATA_FIM_PERMITIDA = "2026-04-30";
-const FERIADOS = ["2026-04-21"];
 
-const MATERIAS = [
-    "Administração Bombeiro Militar - I",
-    "Armamento Munição e Tiro - II",
-    "Atendimento com Produtos Perigosos - III",
-    "Ciências Aplicadas a Atividade BM - II",
-    "Combate ao Racismo e Homofobia - III",
-    "Comunicações e Tecnologia da Informação - II",
-    "Defesa Civil - II",
-    "Direito Militar - I",
-    "Direitos Humanos - II",
-    "Educação Física Militar - III",
-    "Equipamento Motomecanizado - II",
-    "Informação e Contrainformação",
-    "Legislação Bombeiro Militar - III",
-    "Metodologia de Ensino - I",
-    "Ordem Unida - II",
-    "Prevenção e Proteção Contra Incêndio e Pânico - III",
-    "Psicologia das Emergências - II",
-    "Redação Oficial",
-    "Relação de Gênero - III",
-    "Relacionamento Interpessoal - III",
-    "Relações Humanas, Chefia e Liderança - I",
-    "Saúde e Segurança Aplicadas ao Trabalho - II",
-    "Sistema de Comando de Incidentes - III",
-    "Tática de Atendimento Pré-Hospitalar",
-    "Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
-    "Tática de Combate a Incêndio Florestal",
-    "Tática de Combate a Incêndio Urbano",
-    "Tática de Salvamento Aquático",
-    "Tática de Salvamento em Altura",
+const DATA_INICIO = "2026-04-01";
+const DATA_FIM = "2026-04-30";
+
+// Datas bloqueadas (sábados, domingos + feriados/pontos facultativos)
+const DIAS_BLOQUEADOS = [
+    "2026-04-02", // Ponto facultativo
+    "2026-04-03", // Paixão de Cristo
+    "2026-04-04", // Sábado
+    "2026-04-05", // Domingo (Páscoa)
+    "2026-04-11", // Sábado
+    "2026-04-12", // Domingo
+    "2026-04-18", // Sábado
+    "2026-04-19", // Domingo
+    "2026-04-20", // Ponto facultativo
+    "2026-04-21", // Tiradentes
+    "2026-04-25", // Sábado
+    "2026-04-26"  // Domingo
+];
+
+const MATERIAS = [ /* sua lista completa de matérias */ 
+    "Administração Bombeiro Militar - I","Armamento Munição e Tiro - II","Atendimento com Produtos Perigosos - III",
+    "Ciências Aplicadas a Atividade BM - II","Combate ao Racismo e Homofobia - III","Comunicações e Tecnologia da Informação - II",
+    "Defesa Civil - II","Direito Militar - I","Direitos Humanos - II","Educação Física Militar - III",
+    "Equipamento Motomecanizado - II","Informação e Contrainformação","Legislação Bombeiro Militar - III",
+    "Metodologia de Ensino - I","Ordem Unida - II","Prevenção e Proteção Contra Incêndio e Pânico - III",
+    "Psicologia das Emergências - II","Redação Oficial","Relação de Gênero - III","Relacionamento Interpessoal - III",
+    "Relações Humanas, Chefia e Liderança - I","Saúde e Segurança Aplicadas ao Trabalho - II",
+    "Sistema de Comando de Incidentes - III","Tática de Atendimento Pré-Hospitalar",
+    "Tática de Busca e Salvamento em Cobertura Vegetal de Risco","Tática de Combate a Incêndio Florestal",
+    "Tática de Combate a Incêndio Urbano","Tática de Salvamento Aquático","Tática de Salvamento em Altura",
     "Tática de Salvamento Terrestre"
 ].sort();
 
-// ====================== GERAÇÃO DE CORES SUAVES ======================
-function corDaMateria(texto) {
-    let hash = 0;
-    for (let i = 0; i < texto.length; i++) {
-        hash = texto.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    const saturation = 55 + (hash % 20);     // 55% ~ 75%
-    const lightness = 48 + (Math.abs(hash) % 18); // 48% ~ 66%
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
-
-function corTextoContraste(corHSL) {
-    const match = corHSL.match(/hsl\((\d+),\s*\d+%,\s*(\d+)%\)/);
-    if (!match) return "#000000";
-    const lightness = parseInt(match[2]);
-    return lightness < 55 ? "#ffffff" : "#111111";
-}
-
-// Preencher select de matérias
 const selectMateria = document.getElementById("materia");
 MATERIAS.forEach(m => {
     const o = document.createElement("option");
-    o.value = m;
-    o.text = m;
+    o.value = m; o.textContent = m;
     selectMateria.appendChild(o);
 });
 
+function corDaMateria(texto) {
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash) % 360;
+    const sat = 55 + (hash % 20);
+    const light = 48 + (Math.abs(hash) % 18);
+    return `hsl(${hue}, ${sat}%, ${light}%)`;
+}
+
+function corTextoContraste(corHSL) {
+    const match = corHSL.match(/,\s*(\d+)%\)/);
+    const lightness = match ? parseInt(match[1]) : 50;
+    return lightness < 55 ? "#ffffff" : "#111111";
+}
+
 onAuthStateChanged(auth, user => {
     currentUser = user;
+    isAdmin = user?.email === ADMIN_EMAIL;
     document.getElementById("statusLogin").innerHTML = user 
         ? `${user.email}<br><button onclick="logout()">Sair</button>`
         : "Faça login para agendar";
@@ -273,61 +217,41 @@ onAuthStateChanged(auth, user => {
 document.getElementById("login").onclick = () => signInWithPopup(auth, provider);
 window.logout = () => signOut(auth);
 
-// ====================== FUNÇÕES DE HORÁRIO ======================
-function minParaHora(m) {
-    let h = Math.floor(m / 60);
-    let mm = m % 60;
-    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+// === Funções de horário e modal (mesmas de antes) ===
+function minParaHora(m) { 
+    const h = Math.floor(m/60); const mm = m%60;
+    return String(h).padStart(2,'0') + ":" + String(mm).padStart(2,'0');
+}
+function formatarDataBR(d) { 
+    const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; 
 }
 
-function formatarDataBR(dataISO) {
-    const partes = dataISO.split("-");
-    return partes[2] + "/" + partes[1] + "/" + partes[0];
-}
-
-// Configuração dos ranges
 const inicioRange = document.getElementById("inicioRange");
 const fimRange = document.getElementById("fimRange");
 
 function configurarPeriodo() {
-    if (document.getElementById("periodo").value === "manha") {
-        inicioRange.min = 420; inicioRange.max = 720;
-        fimRange.min = 420;    fimRange.max = 720;
-        inicioRange.value = 420;
-        fimRange.value = 720;
-    } else {
-        inicioRange.min = 780; inicioRange.max = 1020;
-        fimRange.min = 780;    fimRange.max = 1020;
-        inicioRange.value = 780;
-        fimRange.value = 1020;
-    }
+    const manha = document.getElementById("periodo").value === "manha";
+    inicioRange.min = manha ? 420 : 780; inicioRange.max = manha ? 720 : 1020;
+    fimRange.min = manha ? 420 : 780;    fimRange.max = manha ? 720 : 1020;
+    inicioRange.value = manha ? 420 : 780;
+    fimRange.value = manha ? 720 : 1020;
     atualizarRange();
 }
-
 document.getElementById("periodo").onchange = configurarPeriodo;
 
 function atualizarRange() {
-    let inicio = parseInt(inicioRange.value);
-    let fim = parseInt(fimRange.value);
-    if (inicio >= fim) {
-        fim = inicio + 15;
-        fimRange.value = fim;
-    }
-    document.getElementById("horarioEscolhido").innerText = 
-        minParaHora(inicio) + " até " + minParaHora(fim);
+    let i = parseInt(inicioRange.value);
+    let f = parseInt(fimRange.value);
+    if (i >= f) { f = i + 15; fimRange.value = f; }
+    document.getElementById("horarioEscolhido").textContent = minParaHora(i) + " até " + minParaHora(f);
 }
-
-inicioRange.oninput = atualizarRange;
-fimRange.oninput = atualizarRange;
+inicioRange.oninput = fimRange.oninput = atualizarRange;
 configurarPeriodo();
 
-// ====================== MODAL ======================
+let dataSelecionada = "";
 window.salvar = async () => {
-    if (!currentUser) {
-        alert("Faça login para agendar");
-        return;
-    }
-    await addDoc(collection(db, "agendamentos"), {
+    if (!currentUser) return alert("Faça login");
+    await addDoc(collection(db,"agendamentos"),{
         data: dataSelecionada,
         materia: selectMateria.value,
         instrutor: document.getElementById("instrutor").value.trim() || "Não informado",
@@ -338,88 +262,98 @@ window.salvar = async () => {
     fechar();
 };
 
-window.fechar = () => {
-    document.getElementById("modal").style.display = "none";
-};
+window.fechar = () => document.getElementById("modal").style.display = "none";
 
-let dataSelecionada = "";
 function abrir(data) {
-    if (!currentUser) {
-        alert("Faça login para agendar gravações");
-        return;
-    }
-    if (data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA) {
-        alert("Agendamentos permitidos apenas em Abril de 2026");
-        return;
-    }
-    if (FERIADOS.includes(data)) {
-        alert("Esta data é feriado e não pode ser agendada");
-        return;
+    if (!currentUser) return alert("Faça login para agendar");
+    if (data < DATA_INICIO || data > DATA_FIM || DIAS_BLOQUEADOS.includes(data)) {
+        return alert("Esta data está bloqueada (fim de semana, feriado ou ponto facultativo).");
     }
     dataSelecionada = data;
     document.getElementById("modal").style.display = "flex";
-    document.getElementById("instrutor").focus();
 }
 
-// ====================== REALTIME ======================
+// ====================== REALTIME + PAINEL ======================
 function iniciarRealtime() {
-    onSnapshot(collection(db, "agendamentos"), snapshot => {
+    onSnapshot(collection(db,"agendamentos"), snapshot => {
         let lista = [];
         snapshot.forEach(d => {
-            const a = { id: d.id, ...d.data() };
-            if (a.data >= DATA_INICIO_PERMITIDA && 
-                a.data <= DATA_FIM_PERMITIDA && 
-                a.status !== "excluido") {
+            const a = {id: d.id, ...d.data()};
+            if (a.data >= DATA_INICIO && a.data <= DATA_FIM && a.status !== "excluido") {
                 lista.push(a);
             }
         });
+        lista.sort((a,b) => a.data.localeCompare(b.data));
 
-        lista.sort((a, b) => a.data.localeCompare(b.data));
-
-        // ====================== PAINEL ======================
         let html = `<table>
-            <tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr>`;
+            <tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th>`;
+        if (isAdmin) html += `<th>Ações</th>`;
+        html += `</tr>`;
 
         lista.forEach(a => {
             const corFundo = corDaMateria(a.materia);
             const corTexto = corTextoContraste(corFundo);
+            const statusClass = a.status === "finalizada" ? "finalizada" : "agendada";
+            const statusText = a.status === "finalizada" ? "Finalizada" : "Agendada";
 
             html += `
             <tr>
-                <td style="background:${corFundo}; 
-                           color:${corTexto}; 
-                           font-weight:600; 
-                           border-radius:8px;">
-                    ${a.materia}
-                </td>
+                <td style="background:${corFundo}; color:${corTexto}; font-weight:600; border-radius:8px;">${a.materia}</td>
                 <td>${a.instrutor}</td>
                 <td>${formatarDataBR(a.data)}</td>
                 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
-            </tr>`;
+                <td><span class="status ${statusClass}">${statusText}</span></td>`;
+
+            if (isAdmin) {
+                html += `
+                <td>
+                    ${a.status !== "finalizada" ? `<button class="btnFinalizar" onclick="finalizar('${a.id}')">Finalizar</button>` : ''}
+                    <button class="btnDelete" onclick="excluir('${a.id}')">Excluir</button>
+                </td>`;
+            }
+            html += `</tr>`;
         });
-        html += "</table>";
+        html += `</table>`;
         document.getElementById("painel").innerHTML = html;
 
-        // Força atualização do calendário
         calendar.refetchEvents();
     });
 }
 
+window.finalizar = async (id) => {
+    if (!isAdmin) return;
+    if (confirm("Marcar gravação como FINALIZADA?")) {
+        await updateDoc(doc(db, "agendamentos", id), { status: "finalizada" });
+    }
+};
+
+window.excluir = async (id) => {
+    if (!isAdmin) return;
+    if (confirm("Excluir este agendamento permanentemente?")) {
+        await updateDoc(doc(db, "agendamentos", id), { status: "excluido" });
+    }
+};
+
 // ====================== CALENDÁRIO ======================
 const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
     locale: "pt-br",
+    initialView: "dayGridMonth",
+    validRange: { start: DATA_INICIO, end: DATA_FIM },
     dateClick: e => abrir(e.dateStr),
+    dayCellDidMount: info => {
+        const dataStr = info.date.toISOString().split('T')[0];
+        if (DIAS_BLOQUEADOS.includes(dataStr)) {
+            info.el.classList.add('dia-bloqueado');
+            if (["2026-04-03","2026-04-21"].includes(dataStr)) info.el.classList.add('feriado');
+        }
+    },
     events: (info, success) => {
-        onSnapshot(collection(db, "agendamentos"), snapshot => {
+        onSnapshot(collection(db,"agendamentos"), snapshot => {
             let eventos = [];
             snapshot.forEach(d => {
                 const a = d.data();
-                if (a.data >= DATA_INICIO_PERMITIDA && 
-                    a.data <= DATA_FIM_PERMITIDA && 
-                    a.status !== "excluido") {
-
+                if (a.data >= DATA_INICIO && a.data <= DATA_FIM && a.status !== "excluido") {
                     const cor = corDaMateria(a.materia);
-
                     eventos.push({
                         title: a.materia,
                         start: a.data,
