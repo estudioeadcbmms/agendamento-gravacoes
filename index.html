@@ -82,8 +82,8 @@ select,input{
 .fc-day-today{ background:#e0f2fe !important; }
 
 /* Cores dos dias bloqueados */
-.dia-bloqueado{ opacity:0.75; cursor:not-allowed; }
-.fim-de-semana{ background:#e2e8f0 !important; }           /* cinza claro */
+.dia-bloqueado{ opacity:0.8; cursor:not-allowed; }
+.fim-de-semana{ background:#e2e8f0 !important; }           /* cinza */
 .ponto-facultativo{ background:#fecaca !important; }       /* vermelho claro */
 .feriado-nacional{ background:#f87171 !important; color:#991b1b !important; font-weight:600; }
 </style>
@@ -136,18 +136,12 @@ select,input{
         <h3>Liberar Novo Mês</h3>
         <label>Mês</label>
         <select id="mesLiberar">
-            <option value="4" selected>Abril</option>
-            <option value="5">Maio</option>
-            <option value="6">Junho</option>
-            <option value="7">Julho</option>
-            <option value="8">Agosto</option>
+            <option value="4" selected>Abril 2026</option>
+            <option value="5">Maio 2026</option>
+            <option value="6">Junho 2026</option>
+            <option value="7">Julho 2026</option>
         </select>
-        <label>Ano</label>
-        <select id="anoLiberar">
-            <option value="2026" selected>2026</option>
-            <option value="2027">2027</option>
-        </select>
-        <p style="margin:15px 0; font-size:13px; color:#666;">O calendário será atualizado automaticamente</p>
+        <p style="margin:15px 0; font-size:13px; color:#666;">Apenas o mês selecionado será liberado</p>
         <button onclick="liberarMesSelecionado()" style="background:#10b981; margin-right:8px;">Liberar Este Mês</button>
         <button onclick="fecharModalLiberar()" style="background:#6b7280;">Cancelar</button>
     </div>
@@ -178,9 +172,9 @@ let isAdmin = false;
 const ADMIN_EMAIL = "estudioeadcbmms@gmail.com";
 
 let DATA_INICIO = "2026-04-01";
-let DATA_FIM    = "2026-06-30";
+let DATA_FIM    = "2026-04-30";
 
-// ==================== FERIADOS E PONTOS FACULTATIVOS ATÉ JUNHO ====================
+// ==================== FERIADOS E PONTOS FACULTATIVOS ====================
 const DIAS_ESPECIAIS = {
     "2026-04-02": { tipo: "ponto-facultativo", nome: "Ponto facultativo" },
     "2026-04-03": { tipo: "feriado-nacional", nome: "Paixão de Cristo (feriado nacional)" },
@@ -191,43 +185,35 @@ const DIAS_ESPECIAIS = {
     "2026-06-05": { tipo: "ponto-facultativo", nome: "Ponto facultativo" }
 };
 
-// Gera todos os sábados e domingos automaticamente até DATA_FIM
-function gerarFinsDeSemana() {
+function gerarFinsDeSemana(inicio, fim) {
     const bloqueados = [];
-    let data = new Date(DATA_INICIO);
-    const fim = new Date(DATA_FIM);
-    
-    while (data <= fim) {
-        const diaSemana = data.getDay(); // 0 = domingo, 6 = sábado
-        if (diaSemana === 0 || diaSemana === 6) {
-            const dataStr = data.toISOString().split('T')[0];
-            bloqueados.push(dataStr);
+    let data = new Date(inicio);
+    const dataFim = new Date(fim);
+    while (data <= dataFim) {
+        const dia = data.getDay();
+        if (dia === 0 || dia === 6) {  // 0=Domingo, 6=Sábado
+            bloqueados.push(data.toISOString().split('T')[0]);
         }
         data.setDate(data.getDate() + 1);
     }
     return bloqueados;
 }
 
-let DIAS_BLOQUEADOS = gerarFinsDeSemana();
+let DIAS_BLOQUEADOS = gerarFinsDeSemana(DATA_INICIO, DATA_FIM);
 
-// ====================== CORES E MENSAGENS ======================
 function getClasseDia(dataStr) {
-    if (DIAS_ESPECIAIS[dataStr]) {
-        return DIAS_ESPECIAIS[dataStr].tipo;
-    }
+    if (DIAS_ESPECIAIS[dataStr]) return DIAS_ESPECIAIS[dataStr].tipo;
     return "fim-de-semana";
 }
 
 function getMensagemBloqueio(dataStr) {
-    if (DIAS_ESPECIAIS[dataStr]) {
-        return DIAS_ESPECIAIS[dataStr].nome;
-    }
+    if (DIAS_ESPECIAIS[dataStr]) return DIAS_ESPECIAIS[dataStr].nome;
     const data = new Date(dataStr);
     return data.getDay() === 0 ? "Domingo - não permitido" : "Sábado - não permitido";
 }
 
-// ====================== Funções auxiliares ======================
-const MATERIAS = [
+// ====================== Matérias e Cores ======================
+const MATERIAS = [ /* sua lista completa */ 
     "Administração Bombeiro Militar - I","Armamento Munição e Tiro - II","Atendimento com Produtos Perigosos - III",
     "Ciências Aplicadas a Atividade BM - II","Combate ao Racismo e Homofobia - III","Comunicações e Tecnologia da Informação - II",
     "Defesa Civil - II","Direito Militar - I","Direitos Humanos - II","Educação Física Militar - III",
@@ -275,29 +261,30 @@ onAuthStateChanged(auth, user => {
 document.getElementById("login").onclick = () => signInWithPopup(auth, provider);
 window.logout = () => signOut(auth);
 
-// ====================== Modal Liberar Mês ======================
+// ====================== Liberar Novo Mês (corrigido) ======================
 function abrirModalLiberar() {
     document.getElementById("modalLiberar").style.display = "flex";
 }
 function fecharModalLiberar() {
     document.getElementById("modalLiberar").style.display = "none";
 }
+
 window.liberarMesSelecionado = () => {
     const mes = parseInt(document.getElementById("mesLiberar").value);
-    const ano = parseInt(document.getElementById("anoLiberar").value);
+    const ano = 2026;
     
     DATA_INICIO = `${ano}-${String(mes).padStart(2,'0')}-01`;
     const ultimoDia = new Date(ano, mes, 0).toISOString().split('T')[0];
     DATA_FIM = ultimoDia;
 
-    DIAS_BLOQUEADOS = gerarFinsDeSemana();
+    DIAS_BLOQUEADOS = gerarFinsDeSemana(DATA_INICIO, DATA_FIM);
 
     calendar.setOption('validRange', { start: DATA_INICIO, end: DATA_FIM });
     fecharModalLiberar();
-    alert(`✅ Período liberado: ${DATA_INICIO} até ${DATA_FIM}`);
+    alert(`✅ Apenas ${mes}/2026 foi liberado (${DATA_INICIO} até ${DATA_FIM})`);
 };
 
-// ====================== Horários e Modal Agendamento ======================
+// ====================== Funções de agendamento ======================
 function minParaHora(m) { 
     const h = Math.floor(m/60); const mm = m%60;
     return String(h).padStart(2,'0') + ":" + String(mm).padStart(2,'0');
@@ -345,14 +332,13 @@ window.fechar = () => document.getElementById("modal").style.display = "none";
 function abrir(data) {
     if (!currentUser) return alert("Faça login para agendar");
     if (data < DATA_INICIO || data > DATA_FIM || DIAS_BLOQUEADOS.includes(data)) {
-        const msg = getMensagemBloqueio(data);
-        return alert(msg);
+        alert(getMensagemBloqueio(data));
+        return;
     }
     dataSelecionada = data;
     document.getElementById("modal").style.display = "flex";
 }
 
-// ====================== Finalizar e Excluir ======================
 window.finalizar = async (id) => {
     if (!isAdmin || !confirm("Marcar como FINALIZADA?")) return;
     await updateDoc(doc(db, "agendamentos", id), { status: "finalizada" });
@@ -362,7 +348,7 @@ window.excluir = async (id) => {
     await updateDoc(doc(db, "agendamentos", id), { status: "excluido" });
 };
 
-// ====================== REALTIME ======================
+// ====================== Realtime e Calendário ======================
 function iniciarRealtime() {
     onSnapshot(collection(db,"agendamentos"), snapshot => {
         let lista = [];
@@ -389,7 +375,6 @@ function iniciarRealtime() {
                 <td>${formatarDataBR(a.data)}</td>
                 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
                 <td><span class="status ${statusClass}">${statusText}</span></td>`;
-            
             if (isAdmin) {
                 html += `<td>
                     ${a.status !== "finalizada" ? `<button class="btnFinalizar" onclick="finalizar('${a.id}')">Finalizar</button>` : ''}
@@ -404,7 +389,6 @@ function iniciarRealtime() {
     });
 }
 
-// ====================== CALENDÁRIO ======================
 const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
     locale: "pt-br",
     initialView: "dayGridMonth",
