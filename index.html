@@ -132,12 +132,6 @@ border-radius:16px;
 width:380px;
 }
 
-.fc-daygrid-event{
-border-radius:6px;
-font-size:12px;
-padding:3px 6px;
-}
-
 .fc-day-today{
 background:#e0f2fe !important;
 }
@@ -145,6 +139,11 @@ background:#e0f2fe !important;
 .dia-bloqueado{
 background:#f1f5f9 !important;
 opacity:0.5;
+}
+
+.fimSemana{
+background:#f8fafc !important;
+color:#94a3b8 !important;
 }
 
 .feriado{
@@ -305,9 +304,7 @@ const provider=new GoogleAuthProvider();
 
 
 let currentUser=null;
-let isAdmin=false;
 let dataSelecionada="";
-
 
 const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
 
@@ -316,7 +313,14 @@ const DATA_INICIO_PERMITIDA="2026-04-01";
 const DATA_FIM_PERMITIDA="2026-04-30";
 
 
-const FERIADOS=["2026-04-03","2026-04-21"];
+const FERIADOS=[
+
+"2026-04-02",
+"2026-04-03",
+"2026-04-20",
+"2026-04-21"
+
+];
 
 
 
@@ -371,7 +375,6 @@ selectMateria.appendChild(o);
 });
 
 
-
 function corDaMateria(texto){
 
 let hash=0;
@@ -382,9 +385,7 @@ hash=texto.charCodeAt(i)+((hash<<5)-hash);
 
 }
 
-const cor=`hsl(${hash%360},65%,55%)`;
-
-return cor;
+return `hsl(${hash%360},65%,55%)`;
 
 }
 
@@ -393,7 +394,6 @@ return cor;
 onAuthStateChanged(auth,user=>{
 
 currentUser=user;
-isAdmin=user?.email===ADMIN_EMAIL;
 
 document.getElementById("statusLogin").innerHTML=
 
@@ -426,15 +426,6 @@ return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
 }
 
 
-function formatarDataBR(dataISO){
-
-const partes=dataISO.split("-");
-
-return partes[2]+"/"+partes[1]+"/"+partes[0];
-
-}
-
-
 
 const inicioRange=document.getElementById("inicioRange");
 const fimRange=document.getElementById("fimRange");
@@ -463,36 +454,10 @@ fimRange.value=1020;
 
 }
 
-atualizarRange();
-
 }
 
 
 document.getElementById("periodo").onchange=configurarPeriodo;
-
-
-
-function atualizarRange(){
-
-let inicio=parseInt(inicioRange.value);
-let fim=parseInt(fimRange.value);
-
-if(inicio>=fim){
-
-fim=inicio+15;
-fimRange.value=fim;
-
-}
-
-document.getElementById("horarioEscolhido").innerText=
-
-minParaHora(inicio)+" até "+minParaHora(fim);
-
-}
-
-
-inicioRange.oninput=atualizarRange;
-fimRange.oninput=atualizarRange;
 
 configurarPeriodo();
 
@@ -527,26 +492,37 @@ document.getElementById("modal").style.display="none";
 
 function abrir(data){
 
-if(!currentUser){
+const d=new Date(data);
 
-alert("faça login");
+const diaSemana=d.getDay();
+
+
+if(diaSemana==0 || diaSemana==6){
+
+alert("fim de semana bloqueado");
+
 return;
 
 }
+
+
+if(FERIADOS.includes(data)){
+
+alert("feriado ou ponto facultativo");
+
+return;
+
+}
+
 
 if(data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA){
 
 alert("apenas Abril");
+
 return;
 
 }
 
-if(FERIADOS.includes(data)){
-
-alert("feriado");
-return;
-
-}
 
 dataSelecionada=data;
 
@@ -564,7 +540,7 @@ let lista=[];
 
 snapshot.forEach(d=>{
 
-const a={id:d.id,...d.data()};
+const a=d.data();
 
 if(
 
@@ -591,17 +567,19 @@ html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr
 
 lista.forEach(a=>{
 
-const cor=corDaMateria(a.materia);
-
 html+=`
 
 <tr>
 
-<td style="color:${cor};font-weight:600">${a.materia}</td>
+<td style="color:${corDaMateria(a.materia)};font-weight:600">
+
+${a.materia}
+
+</td>
 
 <td>${a.instrutor}</td>
 
-<td>${formatarDataBR(a.data)}</td>
+<td>${a.data}</td>
 
 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
 
@@ -633,6 +611,36 @@ document.getElementById("calendar"),
 locale:"pt-br",
 
 dateClick:e=>abrir(e.dateStr),
+
+
+dayCellDidMount:info=>{
+
+const dataStr=info.date.toISOString().split("T")[0];
+
+const diaSemana=info.date.getDay();
+
+
+if(diaSemana==0 || diaSemana==6){
+
+info.el.classList.add("fimSemana");
+
+}
+
+
+if(dataStr < DATA_INICIO_PERMITIDA || dataStr > DATA_FIM_PERMITIDA){
+
+info.el.classList.add("dia-bloqueado");
+
+}
+
+
+if(FERIADOS.includes(dataStr)){
+
+info.el.classList.add("feriado");
+
+}
+
+},
 
 
 events:(info,success)=>{
