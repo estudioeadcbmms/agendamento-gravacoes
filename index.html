@@ -432,6 +432,11 @@ function abrir(data){
 
 if(!currentUser) return alert("faça login");
 
+let diaSemana=new Date(data+"T00:00:00").getDay();
+
+if(diaSemana===0 || diaSemana===6)
+return alert("fim de semana bloqueado");
+
 if(data<DATA_INICIO_PERMITIDA || data>DATA_FIM_PERMITIDA)
 return alert("somente abril");
 
@@ -443,7 +448,6 @@ dataSelecionada=data;
 document.getElementById("modal").style.display="flex";
 
 }
-
 const calendar=new FullCalendar.Calendar(
 
 document.getElementById("calendar"),
@@ -457,12 +461,25 @@ dateClick:e=>abrir(e.dateStr),
 dayCellDidMount:info=>{
 
 let d=info.date.toISOString().split("T")[0];
+let diaSemana=info.date.getDay();
 
-if(d<DATA_INICIO_PERMITIDA || d>DATA_FIM_PERMITIDA)
+if(diaSemana===0 || diaSemana===6){
+
 info.el.classList.add("dia-bloqueado");
 
-if(FERIADOS.includes(d))
+}
+
+if(d<DATA_INICIO_PERMITIDA || d>DATA_FIM_PERMITIDA){
+
+info.el.classList.add("dia-bloqueado");
+
+}
+
+if(FERIADOS.includes(d)){
+
 info.el.classList.add("feriado");
+
+}
 
 },
 
