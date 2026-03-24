@@ -44,14 +44,15 @@ button{
     background:#2563eb;
     color:white;
     border:none;
-    padding:6px 12px;
+    padding:8px 14px;
     border-radius:8px;
     cursor:pointer;
-    margin:2px;
+    margin:4px 2px;
     font-size:13px;
 }
 .btnFinalizar{ background:#10b981; }
 .btnDelete{ background:#dc2626; }
+.btnLiberar{ background:#8b5cf6; font-weight:600; }
 
 select,input{
     padding:10px;
@@ -62,24 +63,25 @@ select,input{
 }
 .range{ width:100%; accent-color:#2563eb; }
 
-#modal{
+#modal, #modalLiberar{
     position:fixed; top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.6);
+    background:rgba(0,0,0,0.65);
     display:none;
     align-items:center;
     justify-content:center;
     z-index:9999;
 }
-#modalContent{
+#modalContent, #modalLiberarContent{
     background:white;
     color:black;
-    padding:28px;
+    padding:30px;
     border-radius:16px;
-    width:400px;
+    width:420px;
+    text-align:center;
 }
 .fc-daygrid-event{ border-radius:6px; font-size:12px; padding:4px 6px; }
 .fc-day-today{ background:#e0f2fe !important; }
-.dia-bloqueado{ background:#f1f5f9 !important; opacity:0.6; cursor:not-allowed; }
+.dia-bloqueado{ background:#f1f5f9 !important; opacity:0.65; cursor:not-allowed; }
 .feriado{ background:#fee2e2 !important; color:#991b1b !important; font-weight:600; }
 </style>
 </head>
@@ -90,6 +92,9 @@ select,input{
     <h3>Área de Administração</h3>
     <button id="login">Entrar com Google</button>
     <p id="statusLogin"></p>
+    <div id="adminTools" style="display:none; margin-top:15px;">
+        <button class="btnLiberar" onclick="abrirModalLiberar()">Liberar Novo Mês</button>
+    </div>
 </div>
 
 <div class="card">
@@ -99,6 +104,7 @@ select,input{
 <h2>Painel de Status das Gravações</h2>
 <div class="card" id="painel"></div>
 
+<!-- Modal Novo Agendamento -->
 <div id="modal">
     <div id="modalContent">
         <h3>Novo Agendamento</h3>
@@ -116,7 +122,6 @@ select,input{
         
         <label>Início</label>
         <input type="range" id="inicioRange" class="range" step="15">
-        
         <label>Fim</label>
         <input type="range" id="fimRange" class="range" step="15">
         
@@ -127,13 +132,48 @@ select,input{
     </div>
 </div>
 
+<!-- Modal Liberar Novo Mês -->
+<div id="modalLiberar">
+    <div id="modalLiberarContent">
+        <h3>Liberar Novo Mês</h3>
+        <label>Mês</label>
+        <select id="mesLiberar">
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Março</option>
+            <option value="4" selected>Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+        </select>
+        
+        <label>Ano</label>
+        <select id="anoLiberar">
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+        </select>
+        
+        <p style="margin:15px 0; font-size:13px; color:#666;">
+            O calendário será atualizado automaticamente
+        </p>
+        
+        <button onclick="liberarMesSelecionado()" style="background:#10b981;">Liberar Este Mês</button>
+        <button onclick="fecharModalLiberar()" style="background:#6b7280;">Cancelar</button>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const firebaseConfig = {
+const firebaseConfig = { /* seu config */ 
     apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
     authDomain: "cfs-2026.firebaseapp.com",
     projectId: "cfs-2026",
@@ -151,26 +191,15 @@ let currentUser = null;
 let isAdmin = false;
 const ADMIN_EMAIL = "estudioeadcbmms@gmail.com";
 
-const DATA_INICIO = "2026-04-01";
-const DATA_FIM = "2026-05-01";
+let DATA_INICIO = "2026-04-01";
+let DATA_FIM    = "2026-04-30";
 
-// Datas bloqueadas (sábados, domingos + feriados/pontos facultativos)
-const DIAS_BLOQUEADOS = [
-    "2026-04-02", // Ponto facultativo
-    "2026-04-03", // Paixão de Cristo
-    "2026-04-04", // Sábado
-    "2026-04-05", // Domingo (Páscoa)
-    "2026-04-11", // Sábado
-    "2026-04-12", // Domingo
-    "2026-04-18", // Sábado
-    "2026-04-19", // Domingo
-    "2026-04-20", // Ponto facultativo
-    "2026-04-21", // Tiradentes
-    "2026-04-25", // Sábado
-    "2026-04-26"  // Domingo
+let DIAS_BLOQUEADOS = [
+    "2026-04-02","2026-04-03","2026-04-04","2026-04-05","2026-04-11","2026-04-12",
+    "2026-04-18","2026-04-19","2026-04-20","2026-04-21","2026-04-25","2026-04-26"
 ];
 
-const MATERIAS = [ /* sua lista completa de matérias */ 
+const MATERIAS = [ /* sua lista completa */ 
     "Administração Bombeiro Militar - I","Armamento Munição e Tiro - II","Atendimento com Produtos Perigosos - III",
     "Ciências Aplicadas a Atividade BM - II","Combate ao Racismo e Homofobia - III","Comunicações e Tecnologia da Informação - II",
     "Defesa Civil - II","Direito Militar - I","Direitos Humanos - II","Educação Física Militar - III",
@@ -209,15 +238,53 @@ function corTextoContraste(corHSL) {
 onAuthStateChanged(auth, user => {
     currentUser = user;
     isAdmin = user?.email === ADMIN_EMAIL;
+    
     document.getElementById("statusLogin").innerHTML = user 
         ? `${user.email}<br><button onclick="logout()">Sair</button>`
         : "Faça login para agendar";
+    
+    document.getElementById("adminTools").style.display = isAdmin ? "block" : "none";
 });
 
 document.getElementById("login").onclick = () => signInWithPopup(auth, provider);
 window.logout = () => signOut(auth);
 
-// === Funções de horário e modal (mesmas de antes) ===
+// ====================== MODAL LIBERAR MÊS ======================
+function abrirModalLiberar() {
+    document.getElementById("modalLiberar").style.display = "flex";
+}
+
+function fecharModalLiberar() {
+    document.getElementById("modalLiberar").style.display = "none";
+}
+
+window.liberarMesSelecionado = () => {
+    const mes = parseInt(document.getElementById("mesLiberar").value);
+    const ano = parseInt(document.getElementById("anoLiberar").value);
+    
+    const primeiroDia = `${ano}-${String(mes).padStart(2,'0')}-01`;
+    const ultimoDiaObj = new Date(ano, mes, 0);
+    const ultimoDia = `${ano}-${String(mes).padStart(2,'0')}-${String(ultimoDiaObj.getDate()).padStart(2,'0')}`;
+    
+    DATA_INICIO = primeiroDia;
+    DATA_FIM = ultimoDia;
+    
+    // Atualiza o calendário
+    calendar.setOption('validRange', { start: DATA_INICIO, end: DATA_FIM });
+    
+    fecharModalLiberar();
+    alert(`✅ Mês liberado com sucesso!\n\nPeríodo: ${primeiroDia} até ${ultimoDia}`);
+    
+    // Atualiza bloqueios de fim de semana automaticamente (opcional)
+    gerarBloqueiosFinsDeSemana();
+};
+
+// Gera automaticamente sábados e domingos (pode ser melhorado depois)
+function gerarBloqueiosFinsDeSemana() {
+    // Por enquanto mantemos manual. Podemos automatizar mais pra frente.
+}
+
+// ====================== Funções de agendamento (mantidas) ======================
 function minParaHora(m) { 
     const h = Math.floor(m/60); const mm = m%60;
     return String(h).padStart(2,'0') + ":" + String(mm).padStart(2,'0');
@@ -238,7 +305,6 @@ function configurarPeriodo() {
     atualizarRange();
 }
 document.getElementById("periodo").onchange = configurarPeriodo;
-
 function atualizarRange() {
     let i = parseInt(inicioRange.value);
     let f = parseInt(fimRange.value);
@@ -267,11 +333,22 @@ window.fechar = () => document.getElementById("modal").style.display = "none";
 function abrir(data) {
     if (!currentUser) return alert("Faça login para agendar");
     if (data < DATA_INICIO || data > DATA_FIM || DIAS_BLOQUEADOS.includes(data)) {
-        return alert("Esta data está bloqueada (fim de semana, feriado ou ponto facultativo).");
+        return alert("Esta data está bloqueada.");
     }
     dataSelecionada = data;
     document.getElementById("modal").style.display = "flex";
 }
+
+// ====================== Finalizar e Excluir ======================
+window.finalizar = async (id) => {
+    if (!isAdmin || !confirm("Marcar como FINALIZADA?")) return;
+    await updateDoc(doc(db, "agendamentos", id), { status: "finalizada" });
+};
+
+window.excluir = async (id) => {
+    if (!isAdmin || !confirm("Excluir este agendamento?")) return;
+    await updateDoc(doc(db, "agendamentos", id), { status: "excluido" });
+};
 
 // ====================== REALTIME + PAINEL ======================
 function iniciarRealtime() {
@@ -279,14 +356,11 @@ function iniciarRealtime() {
         let lista = [];
         snapshot.forEach(d => {
             const a = {id: d.id, ...d.data()};
-            if (a.data >= DATA_INICIO && a.data <= DATA_FIM && a.status !== "excluido") {
-                lista.push(a);
-            }
+            if (a.data >= DATA_INICIO && a.data <= DATA_FIM && a.status !== "excluido") lista.push(a);
         });
         lista.sort((a,b) => a.data.localeCompare(b.data));
 
-        let html = `<table>
-            <tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th>`;
+        let html = `<table><tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th>`;
         if (isAdmin) html += `<th>Ações</th>`;
         html += `</tr>`;
 
@@ -303,10 +377,9 @@ function iniciarRealtime() {
                 <td>${formatarDataBR(a.data)}</td>
                 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
                 <td><span class="status ${statusClass}">${statusText}</span></td>`;
-
+            
             if (isAdmin) {
-                html += `
-                <td>
+                html += `<td>
                     ${a.status !== "finalizada" ? `<button class="btnFinalizar" onclick="finalizar('${a.id}')">Finalizar</button>` : ''}
                     <button class="btnDelete" onclick="excluir('${a.id}')">Excluir</button>
                 </td>`;
@@ -315,24 +388,9 @@ function iniciarRealtime() {
         });
         html += `</table>`;
         document.getElementById("painel").innerHTML = html;
-
         calendar.refetchEvents();
     });
 }
-
-window.finalizar = async (id) => {
-    if (!isAdmin) return;
-    if (confirm("Marcar gravação como FINALIZADA?")) {
-        await updateDoc(doc(db, "agendamentos", id), { status: "finalizada" });
-    }
-};
-
-window.excluir = async (id) => {
-    if (!isAdmin) return;
-    if (confirm("Excluir este agendamento permanentemente?")) {
-        await updateDoc(doc(db, "agendamentos", id), { status: "excluido" });
-    }
-};
 
 // ====================== CALENDÁRIO ======================
 const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
