@@ -166,6 +166,12 @@ color:#991b1b !important;
 font-weight:600;
 }
 
+.finaldesemana{
+background:#fee2e2 !important;
+color:#991b1b !important;
+font-weight:600;
+}  
+  
 </style>
 
 </head>
@@ -328,6 +334,7 @@ const DATA_FIM_PERMITIDA="2026-04-30";
 
 const FERIADOS=["2026-04-02","2026-04-03","2026-04-20","2026-04-21"];
 
+const finaldesemana=["2026-04-04","2026-04-05","2026-04-11","2026-04-12""2026-04-18","2026-04-19","2026-04-25","2026-04-26"];
 
 
 const MATERIAS=[
@@ -534,6 +541,13 @@ return;
 
 }
 
+if(finaldesemana.includes(data)){
+
+alert("finaldesemana");
+return;
+
+}
+  
 dataSelecionada=data;
 
 document.getElementById("modal").style.display="flex";
@@ -660,6 +674,11 @@ info.el.classList.add("dia-bloqueado");
 if(FERIADOS.includes(d)){
 
 info.el.classList.add("feriado");
+
+}
+if(finaldesemana.includes(d)){
+
+info.el.classList.add("finaldesemana");
 
 }
 
