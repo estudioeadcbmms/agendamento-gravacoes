@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
 
 <meta charset="UTF-8">
-
 <title>Agendamento de Gravações CFS - 2026</title>
 
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
@@ -21,10 +19,7 @@ color:white;
 padding:30px;
 }
 
-h2{
-text-align:center;
-font-weight:600;
-}
+h2{text-align:center;}
 
 .card{
 background:white;
@@ -36,10 +31,7 @@ margin:25px auto;
 box-shadow:0 10px 30px rgba(0,0,0,0.35);
 }
 
-#calendar{
-max-width:950px;
-margin:auto;
-}
+#calendar{max-width:950px;margin:auto;}
 
 #painel{
 max-width:1100px;
@@ -48,11 +40,7 @@ max-height:460px;
 overflow:auto;
 }
 
-table{
-width:100%;
-border-collapse:collapse;
-font-size:14px;
-}
+table{width:100%;border-collapse:collapse;font-size:14px;}
 
 th{
 background:#020617;
@@ -66,6 +54,51 @@ padding:12px;
 border-bottom:1px solid #eee;
 }
 
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+margin-top:8px;
+}
+
+select,input{
+width:100%;
+padding:10px;
+margin-top:6px;
+margin-bottom:12px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.range{
+width:100%;
+accent-color:#2563eb;
+}
+
+#modal{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.6);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+#modalContent{
+background:white;
+color:black;
+padding:30px;
+border-radius:16px;
+width:420px;
+}
+
 .fimSemana{
 background:#f1f5f9 !important;
 color:#94a3b8 !important;
@@ -77,9 +110,15 @@ color:#991b1b !important;
 font-weight:600;
 }
 
+.dia-bloqueado{
+background:#f8fafc !important;
+opacity:0.4;
+}
+
 </style>
 
 </head>
+
 
 <body>
 
@@ -87,11 +126,14 @@ font-weight:600;
 
 <div class="card">
 
+<h3>Área de Administração</h3>
+
 <button id="login">Entrar com Google</button>
 
 <p id="statusLogin"></p>
 
 </div>
+
 
 <div class="card">
 
@@ -99,9 +141,44 @@ font-weight:600;
 
 </div>
 
+
 <h2>Painel de Status das Gravações</h2>
 
 <div class="card" id="painel"></div>
+
+
+<div id="modal">
+
+<div id="modalContent">
+
+<h3>Novo Agendamento</h3>
+
+<label>Matéria</label>
+<select id="materia"></select>
+
+<label>Instrutor</label>
+<input id="instrutor">
+
+<label>Período</label>
+<select id="periodo">
+<option value="manha">07:00 às 12:00</option>
+<option value="tarde">13:00 às 17:00</option>
+</select>
+
+<label>Início</label>
+<input type="range" id="inicioRange" class="range" step="15">
+
+<label>Fim</label>
+<input type="range" id="fimRange" class="range" step="15">
+
+<p id="horarioTexto"></p>
+
+<button onclick="salvar()">Salvar</button>
+<button onclick="fechar()">Cancelar</button>
+
+</div>
+
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
@@ -111,28 +188,25 @@ font-weight:600;
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 
 import{
-
 getAuth,
 GoogleAuthProvider,
 signInWithPopup,
-onAuthStateChanged
-
+onAuthStateChanged,
+signOut
 }from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 import{
-
 getFirestore,
 collection,
+addDoc,
 onSnapshot
-
 }from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const firebaseConfig={
 
+const firebaseConfig={
 apiKey:"AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
 authDomain:"cfs-2026.firebaseapp.com",
 projectId:"cfs-2026"
-
 };
 
 const app=initializeApp(firebaseConfig);
@@ -140,8 +214,10 @@ const auth=getAuth(app);
 const db=getFirestore(app);
 const provider=new GoogleAuthProvider();
 
-const DATA_INICIO="2026-04-01";
-const DATA_FIM="2026-04-30";
+let dataSelecionada="";
+
+const DATA_INICIO_PERMITIDA="2026-04-01";
+const DATA_FIM_PERMITIDA="2026-04-30";
 
 const FERIADOS=[
 "2026-04-02",
@@ -150,7 +226,18 @@ const FERIADOS=[
 "2026-04-21"
 ];
 
-function corMateria(txt){
+const MATERIAS=[ ... ].sort();
+
+
+MATERIAS.forEach(m=>{
+const opt=document.createElement("option");
+opt.value=m;
+opt.textContent=m;
+document.getElementById("materia").appendChild(opt);
+});
+
+
+function corDaMateria(txt){
 
 let hash=0;
 
@@ -164,38 +251,182 @@ return `hsl(${hash%360},65%,55%)`;
 
 }
 
+
+onAuthStateChanged(auth,user=>{
+
+document.getElementById("statusLogin").innerHTML=
+user
+?`${user.email}<br><button onclick="logout()">Sair</button>`
+:"";
+
+});
+
 document.getElementById("login").onclick=()=>signInWithPopup(auth,provider);
+window.logout=()=>signOut(auth);
 
-let eventosFirebase=[];
 
-onSnapshot(collection(db,"agendamentos"),snapshot=>{
 
-eventosFirebase=[];
+function minHora(min){
 
-snapshot.forEach(doc=>{
+let h=Math.floor(min/60);
+let m=min%60;
 
-const a=doc.data();
-
-if(a.status!="excluido"){
-
-eventosFirebase.push(a);
+return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 
 }
 
+
+const inicioRange=document.getElementById("inicioRange");
+const fimRange=document.getElementById("fimRange");
+
+
+function ajustarPeriodo(){
+
+if(document.getElementById("periodo").value==="manha"){
+
+inicioRange.min=420;
+inicioRange.max=720;
+
+fimRange.min=420;
+fimRange.max=720;
+
+inicioRange.value=420;
+fimRange.value=720;
+
+}else{
+
+inicioRange.min=780;
+inicioRange.max=1020;
+
+fimRange.min=780;
+fimRange.max=1020;
+
+inicioRange.value=780;
+fimRange.value=1020;
+
+}
+
+mostrarHorario();
+
+}
+
+
+document.getElementById("periodo").onchange=ajustarPeriodo;
+
+
+function mostrarHorario(){
+
+let ini=parseInt(inicioRange.value);
+let fim=parseInt(fimRange.value);
+
+if(ini>=fim){
+
+fim=ini+15;
+fimRange.value=fim;
+
+}
+
+document.getElementById("horarioTexto").innerText=
+minHora(ini)+" até "+minHora(fim);
+
+}
+
+inicioRange.oninput=mostrarHorario;
+fimRange.oninput=mostrarHorario;
+
+ajustarPeriodo();
+
+
+
+window.salvar=async()=>{
+
+await addDoc(collection(db,"agendamentos"),{
+
+data:dataSelecionada,
+materia:document.getElementById("materia").value,
+instrutor:document.getElementById("instrutor").value,
+inicio:parseInt(inicioRange.value),
+fim:parseInt(fimRange.value),
+status:"agendada"
+
 });
 
-renderPainel();
+fechar();
+
+};
+
+
+
+window.fechar=()=>{
+
+document.getElementById("modal").style.display="none";
+
+};
+
+
+
+function abrir(data){
+
+const d=new Date(data+"T00:00:00");
+const dia=d.getDay();
+
+if(dia===0||dia===6){
+
+alert("fim de semana bloqueado");
+return;
+
+}
+
+if(FERIADOS.includes(data)){
+
+alert("feriado bloqueado");
+return;
+
+}
+
+if(data<DATA_INICIO_PERMITIDA||data>DATA_FIM_PERMITIDA){
+
+alert("somente abril permitido");
+return;
+
+}
+
+dataSelecionada=data;
+
+document.getElementById("modal").style.display="flex";
+
+}
+
+
+
+let listaEventos=[];
+
+
+onSnapshot(collection(db,"agendamentos"),snap=>{
+
+listaEventos=[];
+
+snap.forEach(doc=>{
+
+const a=doc.data();
+
+if(a.status!=="excluido") listaEventos.push(a);
+
+});
+
 calendar.refetchEvents();
+atualizarPainel();
 
 });
 
-function renderPainel(){
+
+function atualizarPainel(){
 
 let html="<table>";
 
 html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr>";
 
-eventosFirebase
+listaEventos
 .sort((a,b)=>a.data.localeCompare(b.data))
 .forEach(a=>{
 
@@ -203,7 +434,7 @@ html+=`
 
 <tr>
 
-<td style="color:${corMateria(a.materia)};font-weight:600">
+<td style="color:${corDaMateria(a.materia)};font-weight:600">
 
 ${a.materia}
 
@@ -213,7 +444,7 @@ ${a.materia}
 
 <td>${a.data}</td>
 
-<td>${a.inicio} - ${a.fim}</td>
+<td>${minHora(a.inicio)} - ${minHora(a.fim)}</td>
 
 </tr>
 
@@ -227,13 +458,7 @@ document.getElementById("painel").innerHTML=html;
 
 }
 
-function dataLocal(date){
 
-const off=date.getTimezoneOffset()*60000;
-
-return new Date(date.getTime()-off).toISOString().split("T")[0];
-
-}
 
 const calendar=new FullCalendar.Calendar(
 
@@ -243,19 +468,22 @@ document.getElementById("calendar"),
 
 locale:"pt-br",
 
+dateClick:e=>abrir(e.dateStr),
+
+
 events:(info,success)=>{
 
-let lista=[];
+let eventos=[];
 
-eventosFirebase.forEach(a=>{
+listaEventos.forEach(a=>{
 
-if(a.data>=DATA_INICIO && a.data<=DATA_FIM){
+if(a.data>=DATA_INICIO_PERMITIDA&&a.data<=DATA_FIM_PERMITIDA){
 
-lista.push({
+eventos.push({
 
 title:a.materia,
 start:a.data,
-color:corMateria(a.materia)
+color:corDaMateria(a.materia)
 
 });
 
@@ -263,27 +491,23 @@ color:corMateria(a.materia)
 
 });
 
-success(lista);
+success(eventos);
 
 },
 
+
 dayCellDidMount:info=>{
 
-const dataStr=dataLocal(info.date);
-
+const dataStr=info.date.toISOString().split("T")[0];
 const dia=info.date.getDay();
 
-if(dia==0 || dia==6){
+if(dia===0||dia===6) info.el.classList.add("fimSemana");
 
-info.el.classList.add("fimSemana");
+if(dataStr<DATA_INICIO_PERMITIDA||dataStr>DATA_FIM_PERMITIDA)
+info.el.classList.add("dia-bloqueado");
 
-}
-
-if(FERIADOS.includes(dataStr)){
-
+if(FERIADOS.includes(dataStr))
 info.el.classList.add("feriado");
-
-}
 
 }
 
