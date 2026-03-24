@@ -1,688 +1,441 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
-
 <meta charset="UTF-8">
-
 <title>Agendamento de Gravações CFS - 2026</title>
-
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
 <style>
-
 body{
-font-family:'Inter',sans-serif;
-margin:0;
-background:linear-gradient(180deg,#020617,#020617 40%,#0f172a);
-color:white;
-padding:30px;
+    font-family:'Inter',sans-serif;
+    margin:0;
+    background:linear-gradient(180deg,#020617,#020617 40%,#0f172a);
+    color:white;
+    padding:30px;
 }
-
 h2{
-text-align:center;
-font-weight:600;
+    text-align:center;
+    font-weight:600;
 }
-
 .card{
-background:white;
-color:black;
-padding:25px;
-border-radius:18px;
-max-width:950px;
-margin:25px auto;
-box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    background:white;
+    color:black;
+    padding:25px;
+    border-radius:18px;
+    max-width:950px;
+    margin:25px auto;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
 }
-
 #calendar{
-max-width:950px;
-margin:auto;
+    max-width:950px;
+    margin:auto;
 }
-
 #painel{
-max-width:1100px;
-margin:auto;
-max-height:460px;
-overflow:auto;
+    max-width:1100px;
+    margin:auto;
+    max-height:460px;
+    overflow:auto;
 }
-
 table{
-width:100%;
-border-collapse:collapse;
-font-size:14px;
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
 }
-
 th{
-background:#020617;
-color:white;
-padding:14px;
-text-align:left;
+    background:#020617;
+    color:white;
+    padding:14px;
+    text-align:left;
 }
-
 td{
-padding:12px;
-border-bottom:1px solid #eee;
+    padding:12px;
+    border-bottom:1px solid #eee;
 }
-
 .status{
-padding:6px 14px;
-border-radius:20px;
-color:white;
-font-size:12px;
-font-weight:600;
+    padding:6px 14px;
+    border-radius:20px;
+    color:white;
+    font-size:12px;
+    font-weight:600;
 }
-
-.agendada{
-background:#f59e0b;
-}
-
-.finalizada{
-background:#10b981;
-}
-
 button{
-background:#2563eb;
-color:white;
-border:none;
-padding:6px 12px;
-border-radius:8px;
-cursor:pointer;
-margin:2px;
-font-size:13px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    margin:2px;
+    font-size:13px;
 }
-
 .btnDelete{
-background:#dc2626;
+    background:#dc2626;
 }
-
 select,input{
-padding:10px;
-margin-top:6px;
-margin-bottom:14px;
-border-radius:8px;
-border:1px solid #d1d5db;
-width:100%;
+    padding:10px;
+    margin-top:6px;
+    margin-bottom:14px;
+    border-radius:8px;
+    border:1px solid #d1d5db;
+    width:100%;
 }
-
 .range{
-width:100%;
-accent-color:#2563eb;
+    width:100%;
+    accent-color:#2563eb;
 }
-
 #modal{
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:rgba(0,0,0,0.55);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:9999;
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:rgba(0,0,0,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
 }
-
 #modalContent{
-background:white;
-color:black;
-padding:28px;
-border-radius:16px;
-width:380px;
+    background:white;
+    color:black;
+    padding:28px;
+    border-radius:16px;
+    width:380px;
 }
-
 .fc-daygrid-event{
-border-radius:6px;
-font-size:12px;
-padding:3px 6px;
+    border-radius:6px;
+    font-size:12px;
+    padding:3px 6px;
 }
-
 .fc-day-today{
-background:#e0f2fe !important;
+    background:#e0f2fe !important;
 }
-
 .dia-bloqueado{
-background:#f1f5f9 !important;
-opacity:0.5;
+    background:#f1f5f9 !important;
+    opacity:0.5;
 }
-
 .feriado{
-background:#fee2e2 !important;
-color:#991b1b !important;
-font-weight:600;
+    background:#fee2e2 !important;
+    color:#991b1b !important;
+    font-weight:600;
 }
-
 </style>
-
 </head>
-
-
 <body>
-
-
 <h2>Agendamento de Gravações CFS - 2026</h2>
 
-
 <div class="card">
-
-<h3>Área de Administração</h3>
-
-<button id="login">Entrar com Google</button>
-
-<p id="statusLogin"></p>
-
+    <h3>Área de Administração</h3>
+    <button id="login">Entrar com Google</button>
+    <p id="statusLogin"></p>
 </div>
 
-
 <div class="card">
-
-<div id="calendar"></div>
-
+    <div id="calendar"></div>
 </div>
-
 
 <h2>Painel de Status das Gravações</h2>
-
 <div class="card" id="painel"></div>
 
-
-
 <div id="modal">
-
-<div id="modalContent">
-
-
-<h3>Novo Agendamento</h3>
-
-
-<label>Matéria</label>
-
-<select id="materia"></select>
-
-
-<label>Instrutor</label>
-
-<input id="instrutor">
-
-
-<label>Período</label>
-
-<select id="periodo">
-
-<option value="manha">07:00 às 12:00</option>
-
-<option value="tarde">13:00 às 17:00</option>
-
-</select>
-
-
-<label>Início</label>
-
-<input type="range" id="inicioRange" class="range" step="15">
-
-
-<label>Fim</label>
-
-<input type="range" id="fimRange" class="range" step="15">
-
-
-<p id="horarioEscolhido"></p>
-
-
-<button onclick="salvar()">Salvar</button>
-
-<button onclick="fechar()">Cancelar</button>
-
-
+    <div id="modalContent">
+        <h3>Novo Agendamento</h3>
+        <label>Matéria</label>
+        <select id="materia"></select>
+        
+        <label>Instrutor</label>
+        <input id="instrutor" placeholder="Nome do instrutor">
+        
+        <label>Período</label>
+        <select id="periodo">
+            <option value="manha">07:00 às 12:00</option>
+            <option value="tarde">13:00 às 17:00</option>
+        </select>
+        
+        <label>Início</label>
+        <input type="range" id="inicioRange" class="range" step="15">
+        
+        <label>Fim</label>
+        <input type="range" id="fimRange" class="range" step="15">
+        
+        <p id="horarioEscolhido" style="font-weight:600; margin:10px 0;"></p>
+        
+        <button onclick="salvar()">Salvar Agendamento</button>
+        <button onclick="fechar()">Cancelar</button>
+    </div>
 </div>
-
-</div>
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-
-
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    onAuthStateChanged, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-
-import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-
-import{
-
-getAuth,
-
-GoogleAuthProvider,
-
-signInWithPopup,
-
-onAuthStateChanged,
-
-signOut
-
-}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-
-import{
-
-getFirestore,
-
-collection,
-
-addDoc,
-
-doc,
-
-updateDoc,
-
-onSnapshot
-
-}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-
-
-const firebaseConfig={
-
-apiKey:"AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
-authDomain:"cfs-2026.firebaseapp.com",
-projectId:"cfs-2026",
-storageBucket:"cfs-2026.firebasestorage.app",
-messagingSenderId:"1065046463895",
-appId:"1:1065046463895:web:14f86d3e9ed228a192e0d2"
-
+const firebaseConfig = {
+    apiKey: "AIzaSyDYs6XGy90jwbZqHLsmJ_GPYiiQbarXd-c",
+    authDomain: "cfs-2026.firebaseapp.com",
+    projectId: "cfs-2026",
+    storageBucket: "cfs-2026.firebasestorage.app",
+    messagingSenderId: "1065046463895",
+    appId: "1:1065046463895:web:14f86d3e9ed228a192e0d2"
 };
 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
+let currentUser = null;
+const ADMIN_EMAIL = "estudioeadcbmms@gmail.com";
+const DATA_INICIO_PERMITIDA = "2026-04-01";
+const DATA_FIM_PERMITIDA = "2026-04-30";
+const FERIADOS = ["2026-04-21"];
 
-const app=initializeApp(firebaseConfig);
-
-const auth=getAuth(app);
-
-const db=getFirestore(app);
-
-const provider=new GoogleAuthProvider();
-
-
-
-let currentUser=null;
-let isAdmin=false;
-let dataSelecionada="";
-
-
-const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
-
-
-const DATA_INICIO_PERMITIDA="2026-04-01";
-const DATA_FIM_PERMITIDA="2026-04-30";
-
-
-const FERIADOS=["2026-04-21"];
-
-
-
-const MATERIAS=[
-
-"Administração Bombeiro Militar - I",
-"Armamento Munição e Tiro - II",
-"Atendimento com Produtos Perigosos - III",
-"Ciências Aplicadas a Atividade BM - II",
-"Combate ao Racismo e Homofobia - III",
-"Comunicações e Tecnologia da Informação - II",
-"Defesa Civil - II",
-"Direito Militar - I",
-"Direitos Humanos - II",
-"Educação Física Militar - III",
-"Equipamento Motomecanizado - II",
-"Informação e Contrainformação",
-"Legislação Bombeiro Militar - III",
-"Metodologia de Ensino - I",
-"Ordem Unida - II",
-"Prevenção e Proteção Contra Incêndio e Pânico - III",
-"Psicologia das Emergências - II",
-"Redação Oficial",
-"Relação de Gênero - III",
-"Relacionamento Interpessoal - III",
-"Relações Humanas, Chefia e Liderança - I",
-"Saúde e Segurança Aplicadas ao Trabalho - II",
-"Sistema de Comando de Incidentes - III",
-"Tática de Atendimento Pré-Hospitalar",
-"Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
-"Tática de Combate a Incêndio Florestal",
-"Tática de Combate a Incêndio Urbano",
-"Tática de Salvamento Aquático",
-"Tática de Salvamento em Altura",
-"Tática de Salvamento Terrestre"
-
+const MATERIAS = [
+    "Administração Bombeiro Militar - I",
+    "Armamento Munição e Tiro - II",
+    "Atendimento com Produtos Perigosos - III",
+    "Ciências Aplicadas a Atividade BM - II",
+    "Combate ao Racismo e Homofobia - III",
+    "Comunicações e Tecnologia da Informação - II",
+    "Defesa Civil - II",
+    "Direito Militar - I",
+    "Direitos Humanos - II",
+    "Educação Física Militar - III",
+    "Equipamento Motomecanizado - II",
+    "Informação e Contrainformação",
+    "Legislação Bombeiro Militar - III",
+    "Metodologia de Ensino - I",
+    "Ordem Unida - II",
+    "Prevenção e Proteção Contra Incêndio e Pânico - III",
+    "Psicologia das Emergências - II",
+    "Redação Oficial",
+    "Relação de Gênero - III",
+    "Relacionamento Interpessoal - III",
+    "Relações Humanas, Chefia e Liderança - I",
+    "Saúde e Segurança Aplicadas ao Trabalho - II",
+    "Sistema de Comando de Incidentes - III",
+    "Tática de Atendimento Pré-Hospitalar",
+    "Tática de Busca e Salvamento em Cobertura Vegetal de Risco",
+    "Tática de Combate a Incêndio Florestal",
+    "Tática de Combate a Incêndio Urbano",
+    "Tática de Salvamento Aquático",
+    "Tática de Salvamento em Altura",
+    "Tática de Salvamento Terrestre"
 ].sort();
 
+// ====================== GERAÇÃO DE CORES SUAVES ======================
+function corDaMateria(texto) {
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) {
+        hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    const saturation = 55 + (hash % 20);     // 55% ~ 75%
+    const lightness = 48 + (Math.abs(hash) % 18); // 48% ~ 66%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
 
+function corTextoContraste(corHSL) {
+    const match = corHSL.match(/hsl\((\d+),\s*\d+%,\s*(\d+)%\)/);
+    if (!match) return "#000000";
+    const lightness = parseInt(match[2]);
+    return lightness < 55 ? "#ffffff" : "#111111";
+}
 
-const selectMateria=document.getElementById("materia");
-
-MATERIAS.forEach(m=>{
-
-const o=document.createElement("option");
-
-o.value=m;
-o.text=m;
-
-selectMateria.appendChild(o);
-
+// Preencher select de matérias
+const selectMateria = document.getElementById("materia");
+MATERIAS.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m;
+    o.text = m;
+    selectMateria.appendChild(o);
 });
 
-
-
-function corDaMateria(texto){
-
-let hash=0;
-
-for(let i=0;i<texto.length;i++){
-
-hash=texto.charCodeAt(i)+((hash<<5)-hash);
-
-}
-
-const cor=`hsl(${hash%360},65%,55%)`;
-
-return cor;
-
-}
-
-
-
-onAuthStateChanged(auth,user=>{
-
-currentUser=user;
-isAdmin=user?.email===ADMIN_EMAIL;
-
-document.getElementById("statusLogin").innerHTML=
-
-user
-
-?`${user.email}<br><button onclick="logout()">Sair</button>`
-
-:"";
-
+onAuthStateChanged(auth, user => {
+    currentUser = user;
+    document.getElementById("statusLogin").innerHTML = user 
+        ? `${user.email}<br><button onclick="logout()">Sair</button>`
+        : "Faça login para agendar";
 });
 
+document.getElementById("login").onclick = () => signInWithPopup(auth, provider);
+window.logout = () => signOut(auth);
 
-document.getElementById("login")
-
-.onclick=()=>signInWithPopup(auth,provider);
-
-
-window.logout=()=>signOut(auth);
-
-
-
-function minParaHora(m){
-
-let h=Math.floor(m/60);
-
-let mm=m%60;
-
-return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
-
+// ====================== FUNÇÕES DE HORÁRIO ======================
+function minParaHora(m) {
+    let h = Math.floor(m / 60);
+    let mm = m % 60;
+    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
 }
 
-
-function formatarDataBR(dataISO){
-
-const partes=dataISO.split("-");
-
-return partes[2]+"/"+partes[1]+"/"+partes[0];
-
+function formatarDataBR(dataISO) {
+    const partes = dataISO.split("-");
+    return partes[2] + "/" + partes[1] + "/" + partes[0];
 }
 
+// Configuração dos ranges
+const inicioRange = document.getElementById("inicioRange");
+const fimRange = document.getElementById("fimRange");
 
-
-const inicioRange=document.getElementById("inicioRange");
-const fimRange=document.getElementById("fimRange");
-
-
-
-function configurarPeriodo(){
-
-if(document.getElementById("periodo").value=="manha"){
-
-inicioRange.min=420;
-inicioRange.max=720;
-fimRange.min=420;
-fimRange.max=720;
-inicioRange.value=420;
-fimRange.value=720;
-
-}else{
-
-inicioRange.min=780;
-inicioRange.max=1020;
-fimRange.min=780;
-fimRange.max=1020;
-inicioRange.value=780;
-fimRange.value=1020;
-
+function configurarPeriodo() {
+    if (document.getElementById("periodo").value === "manha") {
+        inicioRange.min = 420; inicioRange.max = 720;
+        fimRange.min = 420;    fimRange.max = 720;
+        inicioRange.value = 420;
+        fimRange.value = 720;
+    } else {
+        inicioRange.min = 780; inicioRange.max = 1020;
+        fimRange.min = 780;    fimRange.max = 1020;
+        inicioRange.value = 780;
+        fimRange.value = 1020;
+    }
+    atualizarRange();
 }
 
-atualizarRange();
+document.getElementById("periodo").onchange = configurarPeriodo;
 
+function atualizarRange() {
+    let inicio = parseInt(inicioRange.value);
+    let fim = parseInt(fimRange.value);
+    if (inicio >= fim) {
+        fim = inicio + 15;
+        fimRange.value = fim;
+    }
+    document.getElementById("horarioEscolhido").innerText = 
+        minParaHora(inicio) + " até " + minParaHora(fim);
 }
 
-
-document.getElementById("periodo").onchange=configurarPeriodo;
-
-
-
-function atualizarRange(){
-
-let inicio=parseInt(inicioRange.value);
-let fim=parseInt(fimRange.value);
-
-if(inicio>=fim){
-
-fim=inicio+15;
-fimRange.value=fim;
-
-}
-
-document.getElementById("horarioEscolhido").innerText=
-
-minParaHora(inicio)+" até "+minParaHora(fim);
-
-}
-
-
-inicioRange.oninput=atualizarRange;
-fimRange.oninput=atualizarRange;
-
+inicioRange.oninput = atualizarRange;
+fimRange.oninput = atualizarRange;
 configurarPeriodo();
 
-
-
-window.salvar=async()=>{
-
-await addDoc(collection(db,"agendamentos"),{
-
-data:dataSelecionada,
-materia:selectMateria.value,
-instrutor:document.getElementById("instrutor").value,
-inicio:parseInt(inicioRange.value),
-fim:parseInt(fimRange.value),
-status:"agendada"
-
-});
-
-fechar();
-
+// ====================== MODAL ======================
+window.salvar = async () => {
+    if (!currentUser) {
+        alert("Faça login para agendar");
+        return;
+    }
+    await addDoc(collection(db, "agendamentos"), {
+        data: dataSelecionada,
+        materia: selectMateria.value,
+        instrutor: document.getElementById("instrutor").value.trim() || "Não informado",
+        inicio: parseInt(inicioRange.value),
+        fim: parseInt(fimRange.value),
+        status: "agendada"
+    });
+    fechar();
 };
 
-
-
-window.fechar=()=>{
-
-document.getElementById("modal").style.display="none";
-
+window.fechar = () => {
+    document.getElementById("modal").style.display = "none";
 };
 
-
-
-function abrir(data){
-
-if(!currentUser){
-
-alert("faça login");
-return;
-
+let dataSelecionada = "";
+function abrir(data) {
+    if (!currentUser) {
+        alert("Faça login para agendar gravações");
+        return;
+    }
+    if (data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA) {
+        alert("Agendamentos permitidos apenas em Abril de 2026");
+        return;
+    }
+    if (FERIADOS.includes(data)) {
+        alert("Esta data é feriado e não pode ser agendada");
+        return;
+    }
+    dataSelecionada = data;
+    document.getElementById("modal").style.display = "flex";
+    document.getElementById("instrutor").focus();
 }
 
-if(data < DATA_INICIO_PERMITIDA || data > DATA_FIM_PERMITIDA){
+// ====================== REALTIME ======================
+function iniciarRealtime() {
+    onSnapshot(collection(db, "agendamentos"), snapshot => {
+        let lista = [];
+        snapshot.forEach(d => {
+            const a = { id: d.id, ...d.data() };
+            if (a.data >= DATA_INICIO_PERMITIDA && 
+                a.data <= DATA_FIM_PERMITIDA && 
+                a.status !== "excluido") {
+                lista.push(a);
+            }
+        });
 
-alert("apenas Abril");
-return;
+        lista.sort((a, b) => a.data.localeCompare(b.data));
 
+        // ====================== PAINEL ======================
+        let html = `<table>
+            <tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr>`;
+
+        lista.forEach(a => {
+            const corFundo = corDaMateria(a.materia);
+            const corTexto = corTextoContraste(corFundo);
+
+            html += `
+            <tr>
+                <td style="background:${corFundo}; 
+                           color:${corTexto}; 
+                           font-weight:600; 
+                           border-radius:8px;">
+                    ${a.materia}
+                </td>
+                <td>${a.instrutor}</td>
+                <td>${formatarDataBR(a.data)}</td>
+                <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
+            </tr>`;
+        });
+        html += "</table>";
+        document.getElementById("painel").innerHTML = html;
+
+        // Força atualização do calendário
+        calendar.refetchEvents();
+    });
 }
 
-if(FERIADOS.includes(data)){
+// ====================== CALENDÁRIO ======================
+const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+    locale: "pt-br",
+    dateClick: e => abrir(e.dateStr),
+    events: (info, success) => {
+        onSnapshot(collection(db, "agendamentos"), snapshot => {
+            let eventos = [];
+            snapshot.forEach(d => {
+                const a = d.data();
+                if (a.data >= DATA_INICIO_PERMITIDA && 
+                    a.data <= DATA_FIM_PERMITIDA && 
+                    a.status !== "excluido") {
 
-alert("feriado");
-return;
+                    const cor = corDaMateria(a.materia);
 
-}
-
-dataSelecionada=data;
-
-document.getElementById("modal").style.display="flex";
-
-}
-
-
-
-function iniciarRealtime(){
-
-onSnapshot(collection(db,"agendamentos"),snapshot=>{
-
-let lista=[];
-
-snapshot.forEach(d=>{
-
-const a={id:d.id,...d.data()};
-
-if(
-
-a.data >= DATA_INICIO_PERMITIDA &&
-a.data <= DATA_FIM_PERMITIDA &&
-a.status!="excluido"
-
-){
-
-lista.push(a);
-
-}
-
+                    eventos.push({
+                        title: a.materia,
+                        start: a.data,
+                        backgroundColor: cor,
+                        borderColor: cor,
+                        textColor: corTextoContraste(cor)
+                    });
+                }
+            });
+            success(eventos);
+        });
+    }
 });
-
-
-lista.sort((a,b)=>a.data.localeCompare(b.data));
-
-
-let html="<table>";
-
-html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th></tr>";
-
-
-lista.forEach(a=>{
-
-const cor=corDaMateria(a.materia);
-
-html+=`
-
-<tr>
-
-<td style="color:${cor};font-weight:600">${a.materia}</td>
-
-<td>${a.instrutor}</td>
-
-<td>${formatarDataBR(a.data)}</td>
-
-<td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
-
-</tr>
-
-`;
-
-});
-
-
-html+="</table>";
-
-document.getElementById("painel").innerHTML=html;
-
-calendar.refetchEvents();
-
-});
-
-}
-
-
-
-const calendar=new FullCalendar.Calendar(
-
-document.getElementById("calendar"),
-
-{
-
-locale:"pt-br",
-
-dateClick:e=>abrir(e.dateStr),
-
-
-events:(info,success)=>{
-
-onSnapshot(collection(db,"agendamentos"),snapshot=>{
-
-let eventos=[];
-
-snapshot.forEach(d=>{
-
-const a=d.data();
-
-if(
-
-a.data >= DATA_INICIO_PERMITIDA &&
-a.data <= DATA_FIM_PERMITIDA &&
-a.status!="excluido"
-
-){
-
-eventos.push({
-
-title:a.materia,
-start:a.data,
-color:corDaMateria(a.materia)
-
-});
-
-}
-
-});
-
-success(eventos);
-
-});
-
-}
-
-}
-
-);
 
 calendar.render();
-
 iniciarRealtime();
-
-
 </script>
-
-
 </body>
-
 </html>
