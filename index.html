@@ -66,10 +66,6 @@ padding:12px;
 border-bottom:1px solid #eee;
 }
 
-tr:hover{
-background:#f8fafc;
-}
-
 .status{
 padding:6px 14px;
 border-radius:20px;
@@ -97,16 +93,8 @@ margin:2px;
 font-size:13px;
 }
 
-button:hover{
-background:#1d4ed8;
-}
-
 .btnDelete{
 background:#dc2626;
-}
-
-.btnDelete:hover{
-background:#b91c1c;
 }
 
 select,input{
@@ -130,7 +118,6 @@ left:0;
 right:0;
 bottom:0;
 background:rgba(0,0,0,0.55);
-backdrop-filter:blur(6px);
 display:none;
 align-items:center;
 justify-content:center;
@@ -143,12 +130,6 @@ color:black;
 padding:28px;
 border-radius:16px;
 width:380px;
-}
-
-.fc-daygrid-event{
-border-radius:6px;
-padding:3px 6px;
-font-size:12px;
 }
 
 .fc-day-today{
@@ -321,12 +302,28 @@ let currentUser=null;
 let isAdmin=false;
 let dataSelecionada="";
 
+
 const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
+
 
 const DATA_INICIO_PERMITIDA="2026-04-01";
 const DATA_FIM_PERMITIDA="2026-04-30";
 
-const FERIADOS=["2026-04-21"];
+
+const FERIADOS=["2026-04-03","2026-04-21"];
+
+
+
+const CORES={
+
+"Direito Militar - I":"#2563eb",
+"Educação Física Militar - III":"#16a34a",
+"Comunicações e Tecnologia da Informação - II":"#ea580c",
+"Combate ao Racismo e Homofobia - III":"#9333ea",
+"Administração Bombeiro Militar - I":"#0ea5e9",
+"Metodologia de Ensino - I":"#6366f1"
+
+};
 
 
 
@@ -372,8 +369,10 @@ const selectMateria=document.getElementById("materia");
 MATERIAS.forEach(m=>{
 
 const o=document.createElement("option");
+
 o.value=m;
 o.text=m;
+
 selectMateria.appendChild(o);
 
 });
@@ -382,12 +381,15 @@ selectMateria.appendChild(o);
 onAuthStateChanged(auth,user=>{
 
 currentUser=user;
+
 isAdmin=user?.email===ADMIN_EMAIL;
 
 document.getElementById("statusLogin").innerHTML=
 
 user
+
 ?`${user.email}<br><button onclick="logout()">Sair</button>`
+
 :"";
 
 });
@@ -405,6 +407,7 @@ window.logout=()=>signOut(auth);
 function minParaHora(m){
 
 let h=Math.floor(m/60);
+
 let mm=m%60;
 
 return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
@@ -572,16 +575,18 @@ lista.sort((a,b)=>a.data.localeCompare(b.data));
 
 let html="<table>";
 
-html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th><th>Ação</th></tr>";
+html+="<tr><th>Matéria</th><th>Instrutor</th><th>Data</th><th>Horário</th><th>Status</th></tr>";
 
 
 lista.forEach(a=>{
+
+const cor=CORES[a.materia] || "#2563eb";
 
 html+=`
 
 <tr>
 
-<td>${a.materia}</td>
+<td style="color:${cor};font-weight:600">${a.materia}</td>
 
 <td>${a.instrutor}</td>
 
@@ -590,18 +595,6 @@ html+=`
 <td>${minParaHora(a.inicio)} - ${minParaHora(a.fim)}</td>
 
 <td><span class="status ${a.status}">${a.status}</span></td>
-
-<td>
-
-${isAdmin?`
-
-<button onclick="finalizar('${a.id}')">✔</button>
-
-<button class="btnDelete" onclick="excluir('${a.id}')">🗑</button>
-
-`:"-"}
-
-</td>
 
 </tr>
 
@@ -622,20 +615,6 @@ calendar.refetchEvents();
 
 
 
-window.finalizar=id=>{
-
-updateDoc(doc(db,"agendamentos",id),{status:"finalizada"});
-
-};
-
-window.excluir=id=>{
-
-updateDoc(doc(db,"agendamentos",id),{status:"excluido"});
-
-};
-
-
-
 const calendar=new FullCalendar.Calendar(
 
 document.getElementById("calendar"),
@@ -645,25 +624,6 @@ document.getElementById("calendar"),
 locale:"pt-br",
 
 dateClick:e=>abrir(e.dateStr),
-
-
-dayCellDidMount:info=>{
-
-const d=info.date.toISOString().split("T")[0];
-
-if(d < DATA_INICIO_PERMITIDA || d > DATA_FIM_PERMITIDA){
-
-info.el.classList.add("dia-bloqueado");
-
-}
-
-if(FERIADOS.includes(d)){
-
-info.el.classList.add("feriado");
-
-}
-
-},
 
 
 events:(info,success)=>{
@@ -688,7 +648,7 @@ eventos.push({
 
 title:a.materia,
 start:a.data,
-color:a.status=="finalizada"?"#10b981":"#2563eb"
+color:CORES[a.materia] || "#2563eb"
 
 });
 
