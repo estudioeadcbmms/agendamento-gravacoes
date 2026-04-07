@@ -303,11 +303,21 @@ let listaGlobal=[];
 
 const ADMIN_EMAIL="estudioeadcbmms@gmail.com";
 
-const DATA_INICIO_PERMITIDA="2026-04-30";
+const DATA_INICIO_PERMITIDA="2026-05-01";
 const DATA_FIM_PERMITIDA="2026-05-31";
 
-const FERIADOS=["2026-05-01"];
-const EDIÇÃO=["2026-05-25","2026-05-26","2026-05-27","2026-05-28,"2026-05-28];
+const FERIADOS=[
+"2026-05-01"
+];
+
+const EDICAO=[
+"2026-05-25",
+"2026-05-26",
+"2026-05-27",
+"2026-05-28",
+"2026-05-29"
+];
+  
 const MATERIAS=[
 
 "Administração Bombeiro Militar - I",
@@ -438,10 +448,13 @@ if(diaSemana===0 || diaSemana===6)
 return alert("fim de semana bloqueado");
 
 if(data<DATA_INICIO_PERMITIDA || data>DATA_FIM_PERMITIDA)
-return alert("somente abril");
+return alert("somente maio");
 
 if(FERIADOS.includes(data))
 return alert("feriado");
+
+if(EDICAO.includes(data))
+return alert("dia reservado para edição de vídeos");
 
 dataSelecionada=data;
 
@@ -458,16 +471,26 @@ locale:"pt-br",
 
 dateClick:e=>abrir(e.dateStr),
 
-dayCellDidMount:info=>{
-
-let d=info.date.toISOString().split("T")[0];
-let diaSemana=info.date.getDay();
-
-if(diaSemana===0 || diaSemana===6){
+if(d<DATA_INICIO_PERMITIDA || d>DATA_FIM_PERMITIDA){
 
 info.el.classList.add("dia-bloqueado");
 
 }
+
+if(FERIADOS.includes(d)){
+
+info.el.classList.add("feriado");
+
+}
+
+if(EDICAO.includes(d)){
+
+info.el.classList.add("dia-bloqueado");
+info.el.style.background="#fde68a";
+
+}
+
+},
 
 if(d<DATA_INICIO_PERMITIDA || d>DATA_FIM_PERMITIDA){
 
