@@ -310,13 +310,7 @@ const FERIADOS=[
 "2026-05-01"
 ];
 
-const EDICAO=[
-"2026-05-25",
-"2026-05-26",
-"2026-05-27",
-"2026-05-28",
-"2026-05-29"
-];
+const EDICAO=[];
   
 const MATERIAS=[
 
@@ -453,9 +447,6 @@ return alert("somente maio");
 if(FERIADOS.includes(data))
 return alert("feriado");
 
-if(EDICAO.includes(data))
-return alert("dia reservado para edição de vídeos");
-
 dataSelecionada=data;
 
 document.getElementById("modal").style.display="flex";
@@ -490,11 +481,6 @@ info.el.classList.add("feriado");
 }
 
 /* dias reservados para edição */
-if(EDICAO.includes(d)){
-info.el.classList.add("dia-bloqueado");
-info.el.style.background="#fde68a";
-info.el.title="Edição de vídeos";
-}
 
 },
 
